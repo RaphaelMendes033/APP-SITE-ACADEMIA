@@ -35,5 +35,4 @@ app.UseStaticFiles(new StaticFileOptions
 
 // Mapeia as páginas Razor
 app.MapRazorPages();
-
 app.Run();
