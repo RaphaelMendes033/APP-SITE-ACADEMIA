@@ -2,23 +2,23 @@ using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Adiciona Razor Pages
+// Adiciona suporte a Razor Pages
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
 // Configuração de middleware
 app.UseHttpsRedirection();
-app.UseStaticFiles(); // Permite o acesso a arquivos estáticos
+app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
 
-// Redireciona para o index.html na raiz do projeto
+// Redireciona a raiz "/" para a página Razor desejada
 app.Use(async (context, next) =>
 {
-    if (!context.Request.Path.HasValue || context.Request.Path == "/")
+    if (string.IsNullOrEmpty(context.Request.Path.Value) || context.Request.Path == "/")
     {
-        context.Response.Redirect("/index.html");
+        context.Response.Redirect("/Shared/Login/Index");
         return;
     }
     await next();
@@ -35,4 +35,6 @@ app.UseStaticFiles(new StaticFileOptions
 
 // Mapeia as páginas Razor
 app.MapRazorPages();
+
+// Inicia o aplicativo
 app.Run();

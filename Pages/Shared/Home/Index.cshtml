@@ -3,19 +3,26 @@
 
 @{
     ViewData["Title"] = "Página Inicial";
+
+    // Recupera o nome do aluno que foi enviado via TempData
+    var nomeAluno = TempData["NomeAluno"]?.ToString() ?? "Aluno não identificado";
 }
 
 <div class="container text-center mt-5">
     <h1 class="display-4 mb-4">Bem-vindo à Academia</h1>
 
-    <!-- Foto do Aluno -->
+
+
+  @*   <!-- Foto do Aluno -->
     <div class="mt-4 mb-4">
         <img src="url-da-foto.jpg" alt="Foto do Aluno" class="img-fluid rounded-circle shadow-lg" style="width: 150px; height: 150px;" />
-    </div>
+    </div> *@
+
+
 
     <!-- Nome do Aluno -->
     <div class="mt-2 mb-4">
-        <h5 class="font-weight-bold" id="nomeAluno">Nome do Aluno: João Silva</h5>
+        <h5 class="font-weight-bold" id="nomeAluno">Nome do Aluno: @nomeAluno</h5>
     </div>
 
     <!-- Botão para Iniciar ou Encerrar o Treino -->
@@ -58,6 +65,14 @@
             <!-- Sexta-feira -->
             <label class="btn btn-outline-primary">
                 <input type="radio" name="diasSemana" id="sexta" value="sexta-feira"> Sexta-feira
+            </label>
+            <!-- sabado -->
+            <label class="btn btn-outline-primary">
+                <input type="radio" name="diasSemana" id="sexta" value="sabado"> Sábado
+            </label>
+            <!-- Domingo -->
+            <label class="btn btn-outline-primary">
+                <input type="radio" name="diasSemana" id="sexta" value="domingo"> Domingo
             </label>
         </div>
     </div>
@@ -148,6 +163,22 @@
                     `;
                     treinoImagem.src = '/Treinos/treino-sexta.jpg';
                     break;
+                case 'sabado':
+                    treinoDescricao.innerHTML = `
+                        <div class="treino-item">
+                            <h5 style="color: #E65C00;">Exercícios de costas e bíceps</h5>
+                        </div>
+                    `;
+                        break;
+                case 'domingo':
+                    treinoDescricao.innerHTML = `
+                        <div class="treino-item">
+                            <h5 style="color: #E65C00;">Exercícios de costas e bíceps</h5>
+                        </div>
+                    `;
+                    treinoImagem.src = '/Treinos/treino-terca.jpg';
+                    break;
+
                 default:
                     treinoDescricao.textContent = 'Selecione um dia para ver o treino correspondente.';
                     break;

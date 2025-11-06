@@ -30,7 +30,7 @@ namespace APP_SITE_ACADEMIA.Classes
                     return null;
 
                 // Monta o SELECT (LIMIT 1)
-                string sql = $"SELECT Nome FROM Empresas WHERE Documento = '{EscapeSql(cnpj)}' AND Id = '{EscapeSql(codigo)}' LIMIT 1";
+                string sql = $"SELECT Nome FROM Empresas WHERE Documento = '{EscapeSql(cnpj)}' AND Codigo = '{EscapeSql(codigo)}' LIMIT 1";
 
                 // Executa via WebLite
                 var tabela = await ExecutarConsultaAsync(sql);
@@ -166,5 +166,34 @@ namespace APP_SITE_ACADEMIA.Classes
             if (string.IsNullOrEmpty(value)) return value;
             return value.Replace("'", "''");
         }
+
+
+
+
+
+
+        // faz o Select de autenticação do usuario   //Ativo é campo numerico 1 = ativo   /   0 = bloqueado
+        public async Task<string> ValidarLoginPessoaAsync(string codigoEmpresa, string senha)
+        {
+            try
+            {
+                string sql = $"SELECT Nome FROM Pessoas WHERE fk_Empresa = '{EscapeSql(codigoEmpresa)}' AND Senha = '{EscapeSql(senha)}' AND Ativo = 1 LIMIT 1";
+                var tabela = await ExecutarConsultaAsync(sql);
+
+                if (tabela != null && tabela.Rows.Count > 0)
+                    return tabela.Rows[0]["Nome"]?.ToString();
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+
+
+
+
     }
 }
