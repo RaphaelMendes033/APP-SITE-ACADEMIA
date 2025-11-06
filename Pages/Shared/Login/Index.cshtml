@@ -4,17 +4,22 @@
     ViewData["Title"] = "Login do Colaborador";
 }
 
-<div class="d-flex justify-content-center align-items-center vh-100 bg-light">
+<div class="d-flex justify-content-center align-items-center vh-100" style="background: linear-gradient(135deg, #1e3c72, #2a5298);">
     <div class="card shadow-lg border-0 p-4" style="width: 400px; border-radius: 20px;">
         <div class="text-center mb-4">
             <h3 class="fw-bold text-dark">Acesso ao Sistema</h3>
-            <p class="text-muted mb-0">Informe os dados para entrar</p>
+            <p class="text-muted mb-0">Informe seus dados para entrar</p>
         </div>
 
         <form method="post">
             <div class="form-floating mb-3">
-                <input type="number" asp-for="CodigoEmpresa" class="form-control rounded-4" id="codigoEmpresa" placeholder="Código da Empresa" required />
-                <label for="codigoEmpresa">Código da Empresa</label>
+                <input type="number" asp-for="CodigoEmpresa" class="form-control rounded-4" id="codigoEmpresa" placeholder="Número do Banco" required />
+                <label for="codigoEmpresa">Número do Banco</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <input type="text" asp-for="Documento" class="form-control rounded-4" id="documento" placeholder="CPF" required />
+                <label for="documento">CPF</label>
             </div>
 
             <div class="form-floating mb-4">

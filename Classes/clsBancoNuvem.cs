@@ -173,23 +173,45 @@ namespace APP_SITE_ACADEMIA.Classes
 
 
         // faz o Select de autenticação do usuario   //Ativo é campo numerico 1 = ativo   /   0 = bloqueado
-        public async Task<string> ValidarLoginPessoaAsync(string codigoEmpresa, string senha)
+        // Faz o Select de autenticação do usuário
+        // Ativo é campo numérico: 1 = ativo / 0 = bloqueado
+        // Faz o Select de autenticação do usuário
+        // Ativo é campo numérico: 1 = ativo / 0 = bloqueado
+        public async Task<string?> ValidarLoginPessoaAsync(string codigoNuvem, string documento, string senha)
         {
             try
             {
-                string sql = $"SELECT Nome FROM Pessoas WHERE fk_Empresa = '{EscapeSql(codigoEmpresa)}' AND Senha = '{EscapeSql(senha)}' AND Ativo = 1 LIMIT 1";
+                // 🔹 Remove tudo que não for número do documento
+                string docNumeros = System.Text.RegularExpressions.Regex.Replace(documento ?? "", @"\D", "");
+
+                // 🔹 Monta a query conforme sua tabela
+                string sql = $@"
+            SELECT Nome
+            FROM Pessoas
+            WHERE fk_CodigoNuvem = '{EscapeSql(codigoNuvem)}'
+              AND Documento = '{EscapeSql(docNumeros)}'
+              AND Senha = '{EscapeSql(senha)}'
+              AND Ativo = 1
+            LIMIT 1";
+
+                // 🔹 Executa no banco
                 var tabela = await ExecutarConsultaAsync(sql);
 
                 if (tabela != null && tabela.Rows.Count > 0)
+                {
                     return tabela.Rows[0]["Nome"]?.ToString();
+                }
 
+                // 🔹 Retorna null se não encontrou ou está bloqueado
                 return null;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"Erro ao validar login: {ex.Message}");
                 return null;
             }
         }
+
 
 
 

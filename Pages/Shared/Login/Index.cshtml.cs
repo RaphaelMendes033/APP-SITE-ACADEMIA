@@ -8,7 +8,10 @@ namespace APP_SITE_ACADEMIA.Pages.Shared.Login
     public class IndexModel : PageModel
     {
         [BindProperty]
-        public string CodigoEmpresa { get; set; } = "";
+        public string CodigoEmpresa { get; set; } = ""; // Número do banco (fk_CodigoNuvem)
+
+        [BindProperty]
+        public string Documento { get; set; } = ""; // CPF da pessoa
 
         [BindProperty]
         public string Senha { get; set; } = "";
@@ -20,19 +23,17 @@ namespace APP_SITE_ACADEMIA.Pages.Shared.Login
         {
             var banco = new clsBancoNuvem();
 
-            string nomePessoa = await banco.ValidarLoginPessoaAsync(CodigoEmpresa, Senha);
+            // ✅ Valida login diretamente na tabela Pessoas
+            string nomePessoa = await banco.ValidarLoginPessoaAsync(CodigoEmpresa, Documento, Senha);
 
             if (!string.IsNullOrEmpty(nomePessoa))
             {
-                // ✅ Guarda o nome para a próxima página
                 TempData["NomeAluno"] = nomePessoa;
-
-                // Redireciona para a home
                 return RedirectToPage("/Shared/Home/Index");
             }
             else
             {
-                Mensagem = "Código da empresa ou senha inválidos.";
+                Mensagem = "Número do banco, CPF ou senha inválidos, ou conta bloqueada.";
                 return Page();
             }
         }
