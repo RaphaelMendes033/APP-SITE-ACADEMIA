@@ -1,277 +1,153 @@
 ﻿@page
-
-
+@model APP_SITE_ACADEMIA.Pages.Shared.Home.IndexModel
 @{
     ViewData["Title"] = "Página Inicial";
-
-    // Recupera o nome do aluno que foi enviado via TempData
-    var nomeAluno = TempData["NomeAluno"]?.ToString() ?? "Aluno não identificado";
 }
 
 <div class="container text-center mt-5">
     <h1 class="display-4 mb-4">Bem-vindo à Academia</h1>
 
+    <h5 class="font-weight-bold mb-4">Nome do Aluno: @Model.NomeAluno</h5>
 
-
-  @*   <!-- Foto do Aluno -->
-    <div class="mt-4 mb-4">
-        <img src="url-da-foto.jpg" alt="Foto do Aluno" class="img-fluid rounded-circle shadow-lg" style="width: 150px; height: 150px;" />
-    </div> *@
-
-
-
-    <!-- Nome do Aluno -->
-    <div class="mt-2 mb-4">
-        <h5 class="font-weight-bold" id="nomeAluno">Nome do Aluno: @nomeAluno</h5>
-    </div>
-
-    <!-- Botão para Iniciar ou Encerrar o Treino -->
     <button id="iniciarEncerrarTreino" class="btn btn-success mt-4">Iniciar Treino</button>
+    <h4 id="tempoTreino" class="mt-3 text-primary">00:00:00</h4>
 
-    <!-- Label para mostrar a data e hora -->
+    <script>
+        let intervalo;
+        let tempoSegundos = 0;
+        let treinoAtivo = false;
+
+        const botao = document.getElementById("iniciarEncerrarTreino");
+        const tempoDisplay = document.getElementById("tempoTreino");
+
+        function formatarTempo(segundos) {
+            const h = String(Math.floor(segundos / 3600)).padStart(2, '0');
+            const m = String(Math.floor((segundos % 3600) / 60)).padStart(2, '0');
+            const s = String(segundos % 60).padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function atualizarTempo() {
+            tempoSegundos++;
+            tempoDisplay.textContent = formatarTempo(tempoSegundos);
+        }
+
+        botao.addEventListener("click", function () {
+            if (!treinoAtivo) {
+                // Inicia o treino (zera e começa do zero)
+                tempoSegundos = 0;
+                tempoDisplay.textContent = "00:00:00";
+                treinoAtivo = true;
+
+                botao.textContent = "Encerrar Treino";
+                botao.classList.remove("btn-success");
+                botao.classList.add("btn-danger");
+
+                intervalo = setInterval(atualizarTempo, 1000);
+            } else {
+                // Encerra o treino
+                treinoAtivo = false;
+                clearInterval(intervalo);
+
+                botao.textContent = "Iniciar Treino";
+                botao.classList.remove("btn-danger");
+                botao.classList.add("btn-success");
+            }
+        });
+    </script>
+
     <label id="dataHora" class="mt-3" style="font-size: 16px;"></label>
-
-    <!-- Label para mostrar o encerramento -->
     <label id="dataHoraEncerramento" class="mt-3" style="font-size: 16px; display: none;"></label>
-
-    <!-- Label para mostrar a duração total -->
     <label id="duracaoTreino" class="mt-3" style="font-size: 16px;"></label>
 
-    <!-- GroupBox com dias da semana -->
     <div class="mt-4 mb-5">
         <h4 class="font-weight-bold">Selecione o dia da semana:</h4>
-
         <div class="btn-group btn-group-toggle" data-toggle="buttons">
-            <!-- Segunda-feira -->
-            <label class="btn btn-outline-primary">
-                <input type="radio" name="diasSemana" id="segunda" value="segunda-feira"> Segunda-feira
-            </label>
+            @{
+                // ordem fixa de segunda a domingo
+                var ordemDias = new[] { "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo" };
 
-            <!-- Terça-feira -->
-            <label class="btn btn-outline-primary">
-                <input type="radio" name="diasSemana" id="terca" value="terca-feira"> Terça-feira
-            </label>
+                // normaliza os dias vindos do banco (remove espaços e põe primeira letra maiúscula)
+                var diasDisponiveis = Model.ListaTreinos
+                .Select(t => t.DiaSemana?.Trim())
+                .Where(d => !string.IsNullOrEmpty(d))
+                .Distinct()
+                .OrderBy(d =>
+                {
+                    // tenta encontrar o índice do dia correspondente (mesmo se vier "segunda-feira" etc.)
+                    var match = ordemDias.FirstOrDefault(o =>
+                            d.StartsWith(o, StringComparison.OrdinalIgnoreCase));
+                    return match != null ? Array.IndexOf(ordemDias, match) : 999;
+                });
+            }
 
-            <!-- Quarta-feira -->
-            <label class="btn btn-outline-primary">
-                <input type="radio" name="diasSemana" id="quarta" value="quarta-feira"> Quarta-feira
-            </label>
+            @foreach (var dia in diasDisponiveis)
+            {
+                <label class="btn btn-outline-primary">
+                    <input type="radio" name="diasSemana" value="@dia"> @dia
+                </label>
+            }
 
-            <!-- Quinta-feira -->
-            <label class="btn btn-outline-primary">
-                <input type="radio" name="diasSemana" id="quinta" value="quinta-feira"> Quinta-feira
-            </label>
 
-            <!-- Sexta-feira -->
-            <label class="btn btn-outline-primary">
-                <input type="radio" name="diasSemana" id="sexta" value="sexta-feira"> Sexta-feira
-            </label>
-            <!-- sabado -->
-            <label class="btn btn-outline-primary">
-                <input type="radio" name="diasSemana" id="sexta" value="sabado"> Sábado
-            </label>
-            <!-- Domingo -->
-            <label class="btn btn-outline-primary">
-                <input type="radio" name="diasSemana" id="sexta" value="domingo"> Domingo
-            </label>
         </div>
     </div>
 
-    <!-- Exibição do treino correspondente -->
+
     <div id="treino" class="mt-4">
         <h4 class="font-weight-bold">Treino do Dia</h4>
-        <p id="treinoDescricao" class="text-muted">Selecione um dia para ver o treino correspondente.</p>
-
-        <!-- Imagem do treino (inicialmente oculta) -->
-        <img id="treinoImagem" src="" alt="Imagem do treino" class="img-fluid shadow-lg rounded" style="display: none; width: 100%; max-width: 600px;" />
+        <div id="treinoDescricao" class="text-muted">Selecione um dia para ver o treino correspondente.</div>
     </div>
 </div>
 
-<script>
-    let tempoInicio = 0;
-    let intervaloCronometro;
+@section Scripts {
+    <script>
+        const treinos = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ListaTreinos));
 
-    // Lógica para atualizar o treino conforme o dia selecionado
-    document.querySelectorAll('input[name="diasSemana"]').forEach(radio => {
-        radio.addEventListener('change', function () {
-            const treinoDescricao = document.getElementById('treinoDescricao');
-            const treinoImagem = document.getElementById('treinoImagem');
+        document.querySelectorAll('input[name="diasSemana"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                const treinoContainer = document.getElementById('treinoDescricao');
+                const selecionado = this.value;
+                const treinosDoDia = treinos.filter(t => t.DiaSemana === selecionado);
 
-            // Limpa a imagem antes de adicionar a nova
-            treinoImagem.style.display = 'none';
+                if (treinosDoDia.length === 0) {
+                    treinoContainer.innerHTML = `<p>Nenhum treino cadastrado para ${selecionado}.</p>`;
+                    return;
+                }
 
-          // Lógica para cada dia da semana
-            switch (this.value) {
-                case 'segunda-feira':
-                    treinoDescricao.innerHTML = `
-                        <div class="treino-item">
-                            <h5 style="color: #E65C00;">Supino Reto</h5>
-                            <img src='/Treinos/supino_reto.png' alt='Supino Reto' class='img-fluid rounded shadow'>
-                        </div>
-                        <div class="treino-item">
-                            <h5 style="color: #E65C00;">Supino Inclinado</h5>
-                            <img src='/Treinos/supino_inclinado.png' alt='Supino Inclinado' class='img-fluid rounded shadow'>
-                        </div>
-                        <div class="treino-item">
-                            <h5 style="color: #E65C00;">Crucifixo Máquina</h5>
-                            <img src='/Treinos/crucifixo_maquina.png' alt='Crucifixo Máquina' class='img-fluid rounded shadow'>
-                        </div>
-                        <div class="treino-item">
-                            <h5 style="color: #E65C00;">Tríceps Testa na Polia</h5>
-                            <img src='/Treinos/triceps_testa_polia.png' alt='Tríceps Testa na Polia' class='img-fluid rounded shadow'>
-                        </div>
-                        <div class="treino-item">
-                            <h5 style="color: #E65C00;">Tríceps Corda na Polia</h5>
-                            <img src='/Treinos/triceps_corda_polia.png' alt='Tríceps Corda na Polia' class='img-fluid rounded shadow'>
-                        </div>
-                        <div class="treino-item">
-                            <h5 style="color: #E65C00;">Tríceps Francês com Halteres</h5>
-                            <img src='/Treinos/triceps_frances_halteres.png' alt='Tríceps Francês com Halteres' class='img-fluid rounded shadow'>
-                        </div>
-                    `;
-                    break;
-
-                case 'terca-feira':
-                    treinoDescricao.innerHTML = `
-                        <div class="treino-item">
-                            <h5 style="color: #E65C00;">Exercícios de costas e bíceps</h5>
-                        </div>
-                    `;
-                    treinoImagem.src = '/Treinos/treino-terca.jpg';
-                    break;
-                case 'quarta-feira':
-                    treinoDescricao.innerHTML = `
-                        <div class="treino-item">
-                            <h5 style="color: #E65C00;">Exercícios de pernas</h5>
-                        </div>
-                    `;
-                    treinoImagem.src = '/Treinos/treino-quarta.jpg';
-                    break;
-                case 'quinta-feira':
-                    treinoDescricao.innerHTML = `
-                        <div class="treino-item">
-                            <h5 style="color: #E65C00;">Exercícios de ombro e trapézio</h5>
-                        </div>
-                    `;
-                    treinoImagem.src = '/Treinos/treino-quinta.jpg';
-                    break;
-                case 'sexta-feira':
-                    treinoDescricao.innerHTML = `
-                        <div class="treino-item">
-                            <h5 style="color: #E65C00;">Exercícios de abdômen e cardio</h5>
-                        </div>
-                    `;
-                    treinoImagem.src = '/Treinos/treino-sexta.jpg';
-                    break;
-                case 'sabado':
-                    treinoDescricao.innerHTML = `
-                        <div class="treino-item">
-                            <h5 style="color: #E65C00;">Exercícios de costas e bíceps</h5>
-                        </div>
-                    `;
-                        break;
-                case 'domingo':
-                    treinoDescricao.innerHTML = `
-                        <div class="treino-item">
-                            <h5 style="color: #E65C00;">Exercícios de costas e bíceps</h5>
-                        </div>
-                    `;
-                    treinoImagem.src = '/Treinos/treino-terca.jpg';
-                    break;
-
-                default:
-                    treinoDescricao.textContent = 'Selecione um dia para ver o treino correspondente.';
-                    break;
-            }
-
-            // Exibe a imagem do treino
-            treinoImagem.style.display = 'block';
+                treinoContainer.innerHTML = treinosDoDia.map(t => {
+                    const imagem = t.ImagemBase64 ? `<img src="data:image/png;base64,${t.ImagemBase64}" class='img-fluid rounded shadow mt-3' />` : "";
+                    return `
+                        <div class='treino-item mt-4'>
+                            <h5 style='color:#E65C00;'>${t.Nome}</h5>
+                            <p>${t.Descricao}</p>
+                            ${imagem}
+                        </div>`;
+                }).join("");
+            });
         });
-    });
+    </script>
+}
 
-       // Lógica para o botão Iniciar/Encerrar Treino
-    document.getElementById('iniciarEncerrarTreino').addEventListener('click', function () {
-        const dataHoraLabel = document.getElementById('dataHora');
-        const dataHoraEncerramentoLabel = document.getElementById('dataHoraEncerramento');
-        const duracaoLabel = document.getElementById('duracaoTreino');
 
-        if (this.textContent === "Iniciar Treino") {
-            // Iniciar o cronômetro
-            tempoInicio = Math.floor(new Date().getTime() / 1000); // Obtém o tempo atual em segundos
-            intervaloCronometro = setInterval(function () {
-                // Pode adicionar lógica para exibir o tempo decorrido, se desejar
-            }, 1000);
-
-            // Adiciona o cronômetro na tela
-            let tempoDecorrido = 0;
-            const cronometroElement = document.createElement('div'); // Cria um elemento para exibir o cronômetro
-            cronometroElement.id = 'cronometro';
-            cronometroElement.style.fontSize = '20px';
-            cronometroElement.style.fontWeight = 'bold';
-            document.querySelector('.container').appendChild(cronometroElement);
-
-            intervaloCronometro = setInterval(function () {
-                tempoDecorrido++; // Incrementa o tempo decorrido em segundos
-                const minutos = Math.floor(tempoDecorrido / 60);
-                const segundos = tempoDecorrido % 60;
-                cronometroElement.textContent = `Tempo: ${minutos}:${segundos.toString().padStart(2, '0')}`;
-            }, 1000);
-
-               // Altera o botão para Encerrar e muda a cor de fundo para vermelho
-    this.textContent = "Encerrar Treino";
-    this.style.backgroundColor = "red"; // Altera a cor de fundo para vermelho
-
-            // Exibe a data e hora de início
-            const dataHoraAtual = new Date();
-            const dataHoraFormatada = `${dataHoraAtual.toLocaleDateString()} ${dataHoraAtual.toLocaleTimeString()}`;
-            dataHoraLabel.textContent = `Treino iniciado em: ${dataHoraFormatada}`;
-        } else {
-            // Encerrar o cronômetro
-            const dataHoraAtual = new Date();
-            const dataHoraFormatada = `${dataHoraAtual.toLocaleDateString()} ${dataHoraAtual.toLocaleTimeString()}`;
-            dataHoraEncerramentoLabel.textContent = `Treino encerrado em: ${dataHoraFormatada}`;
-
-            // Para o cronômetro
-            clearInterval(intervaloCronometro);
-
-            // Exibe a duração do treino
-            duracaoLabel.textContent = `Duração total do treino: ${Math.floor((Math.floor(dataHoraAtual.getTime() / 1000) - tempoInicio) / 60)} min`;
-
-            // Remove o cronômetro
-            document.getElementById('cronometro').remove();
-
-            // Desabilita o botão para evitar múltiplos cliques
-            document.getElementById('iniciarEncerrarTreino').disabled = true;
-        }
-    });
-
-</script>
 
 <style>
-    /* Personalizando os botões de seleção */
     .btn-group-toggle .btn {
         font-weight: bold;
         padding: 15px 20px;
         font-size: 16px;
         border-radius: 8px;
-        transition: background-color 0.3s ease, transform 0.2s ease;
-        border-color: #E65C00; /* Laranja escuro */
-        color: #E65C00; /* Laranja escuro */
+        border-color: #E65C00;
+        color: #E65C00;
+        transition: 0.3s;
     }
 
         .btn-group-toggle .btn:hover {
-            background-color: #E65C00; /* Laranja escuro */
+            background-color: #E65C00;
             color: white;
             transform: scale(1.1);
         }
 
-    /* Ajustando a imagem do treino */
     .treino-item {
-        margin-bottom: 50px;
+        margin-bottom: 40px;
     }
-
-        .treino-item h5 {
-            font-weight: 300;
-            color: #E65C00; /* Laranja escuro */
-        }
 </style>

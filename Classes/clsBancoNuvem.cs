@@ -1,9 +1,6 @@
 ﻿using Newtonsoft.Json;
-using System;
 using System.Data;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading.Tasks;
 
 namespace APP_SITE_ACADEMIA.Classes
 {
@@ -173,10 +170,7 @@ namespace APP_SITE_ACADEMIA.Classes
 
 
         // faz o Select de autenticação do usuario   //Ativo é campo numerico 1 = ativo   /   0 = bloqueado
-        // Faz o Select de autenticação do usuário
-        // Ativo é campo numérico: 1 = ativo / 0 = bloqueado
-        // Faz o Select de autenticação do usuário
-        // Ativo é campo numérico: 1 = ativo / 0 = bloqueado
+       
         public async Task<string?> ValidarLoginPessoaAsync(string codigoNuvem, string documento, string senha)
         {
             try
@@ -184,33 +178,77 @@ namespace APP_SITE_ACADEMIA.Classes
                 // 🔹 Remove tudo que não for número do documento
                 string docNumeros = System.Text.RegularExpressions.Regex.Replace(documento ?? "", @"\D", "");
 
-                // 🔹 Monta a query conforme sua tabela
-                string sql = $@"
-            SELECT Nome
+                // 🔹 Busca o usuário (independente de senha e ativo)
+                string sqlUsuario = $@"
+            SELECT Nome, Senha, Ativo
             FROM Pessoas
             WHERE fk_CodigoNuvem = '{EscapeSql(codigoNuvem)}'
               AND Documento = '{EscapeSql(docNumeros)}'
-              AND Senha = '{EscapeSql(senha)}'
-              AND Ativo = 1
             LIMIT 1";
 
-                // 🔹 Executa no banco
-                var tabela = await ExecutarConsultaAsync(sql);
+                var tabela = await ExecutarConsultaAsync(sqlUsuario);
 
-                if (tabela != null && tabela.Rows.Count > 0)
-                {
-                    return tabela.Rows[0]["Nome"]?.ToString();
-                }
+                // 🔹 Caso não encontre o usuário
+                if (tabela == null || tabela.Rows.Count == 0)
+                    return "Usuário ou senha inválido.";
 
-                // 🔹 Retorna null se não encontrou ou está bloqueado
-                return null;
+                var row = tabela.Rows[0];
+                string senhaBanco = row["Senha"]?.ToString() ?? "";
+                int ativo = Convert.ToInt32(row["Ativo"]);
+
+                // 🔹 Verifica se está bloqueado
+                if (ativo != 1)
+                    return "Usuário bloqueado.";
+
+                // 🔹 Verifica se a senha confere
+                if (!string.Equals(senhaBanco, senha))
+                    return "Usuário ou senha inválido.";
+
+                // 🔹 Retorna nome se tudo ok
+                return row["Nome"]?.ToString();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Erro ao validar login: {ex.Message}");
-                return null;
+                return "Erro interno ao validar login.";
             }
         }
+
+
+        //public async Task<string?> ValidarLoginPessoaAsync(string codigoNuvem, string documento, string senha)
+        //{
+        //    try
+        //    {
+        //        // 🔹 Remove tudo que não for número do documento
+        //        string docNumeros = System.Text.RegularExpressions.Regex.Replace(documento ?? "", @"\D", "");
+
+        //        // 🔹 Monta a query conforme sua tabela
+        //        string sql = $@"
+        //    SELECT Nome
+        //    FROM Pessoas
+        //    WHERE fk_CodigoNuvem = '{EscapeSql(codigoNuvem)}'
+        //      AND Documento = '{EscapeSql(docNumeros)}'
+        //      AND Senha = '{EscapeSql(senha)}'
+        //      AND Ativo = 1
+        //    LIMIT 1";
+
+        //        // 🔹 Executa no banco
+        //        var tabela = await ExecutarConsultaAsync(sql);
+
+        //        if (tabela != null && tabela.Rows.Count > 0)
+        //        {
+        //            return tabela.Rows[0]["Nome"]?.ToString();
+        //        }
+
+        //        // 🔹 Retorna null se não encontrou ou está bloqueado
+        //        return null;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"Erro ao validar login: {ex.Message}");
+        //        return null;
+        //    }
+        //}
 
 
 
