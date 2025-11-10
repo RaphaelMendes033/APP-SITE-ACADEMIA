@@ -1,7 +1,7 @@
 ﻿@page
 @model APP_SITE_ACADEMIA.Pages.Shared.AvaliacaoFisica.IndexModel
 @{
-    ViewData["Title"] = "Avaliação Física";
+    ViewData["Title"] = "Cálculo de IMC";
     Layout = "_Layout";
 }
 
@@ -12,14 +12,18 @@
         padding: 10px;
         margin-bottom: 10px;
         font-weight: bold;
+        text-align: center;
+        border-radius: 5px;
     }
 
     .form-section {
         background-color: white;
-        padding: 20px;
+        padding: 25px;
         border: 1px solid #ddd;
-        margin-bottom: 20px;
         border-radius: 8px;
+        max-width: 500px;
+        margin: 0 auto;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
     label {
@@ -31,7 +35,7 @@
     .form-control {
         width: 100%;
         padding: 8px;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
         border-radius: 4px;
         border: 1px solid #ccc;
     }
@@ -44,160 +48,78 @@
         font-weight: bold;
         cursor: pointer;
         border-radius: 5px;
+        width: 100%;
     }
 
         .btn-primary:hover {
             background-color: #e69500;
         }
+
+    #resultado {
+        margin-top: 15px;
+        font-weight: bold;
+        text-align: center;
+        font-size: 1.2em;
+    }
 </style>
 
 <div class="container mt-4">
-    <h2 class="text-center text-uppercase mb-4">Avaliação Física e IMC</h2>
+    <h2 class="text-center text-uppercase mb-4">Calculadora de IMC</h2>
 
-    <form method="post">
-        <div class="section-title">Dados Pessoais</div>
-        <div class="form-section">
-            <label>Nome:</label>
-            <input asp-for="Nome" class="form-control" />
-
-            <label>Idade:</label>
-            <input asp-for="Idade" type="number" class="form-control" />
-
-            <label>Sexo:</label>
-            <select asp-for="Sexo" class="form-control">
-                <option>Masculino</option>
-                <option>Feminino</option>
-            </select>
-        </div>
-
-        <div class="section-title">Medidas Corporais (em cm)</div>
-        <div class="form-section">
-            <label>Braço Direito:</label>
-            <input asp-for="BracoDireito" type="number" step="0.1" class="form-control" />
-
-            <label>Braço Esquerdo:</label>
-            <input asp-for="BracoEsquerdo" type="number" step="0.1" class="form-control" />
-
-            <label>Peitoral:</label>
-            <input asp-for="Peitoral" type="number" step="0.1" class="form-control" />
-
-            <label>Abdômen:</label>
-            <input asp-for="Abdomen" type="number" step="0.1" class="form-control" />
-
-            <label>Cintura:</label>
-            <input asp-for="Cintura" type="number" step="0.1" class="form-control" />
-
-            <label>Quadril:</label>
-            <input asp-for="Quadril" type="number" step="0.1" class="form-control" />
-
-            <label>Coxa Direita:</label>
-            <input asp-for="CoxaDireita" type="number" step="0.1" class="form-control" />
-
-            <label>Coxa Esquerda:</label>
-            <input asp-for="CoxaEsquerda" type="number" step="0.1" class="form-control" />
-
-            <label>Panturrilha Direita:</label>
-            <input asp-for="PanturrilhaDireita" type="number" step="0.1" class="form-control" />
-
-            <label>Panturrilha Esquerda:</label>
-            <input asp-for="PanturrilhaEsquerda" type="number" step="0.1" class="form-control" />
-        </div>
-
-        <div class="section-title">Dados para Cálculo do IMC</div>
-        <div class="form-section">
+    <div class="form-section">
+        <form method="post">
             <label>Peso (kg):</label>
-            <input id="peso" name="Peso" type="number" step="0.1" class="form-control"
-                   value="@Model.Peso" />
+            <input asp-for="Peso" type="number" step="0.1" class="form-control" placeholder="Ex: 70" />
 
             <label>Altura (m):</label>
-            <input id="altura" name="Altura" type="number" step="0.01" class="form-control"
-                   value="@Model.Altura" />
+            <input asp-for="Altura" type="number" step="0.01" class="form-control" placeholder="Ex: 1.75" />
 
-            <label>IMC (calculado):</label>
-            <input id="imc" value="@Model.IMC" readonly class="form-control" />
+            <button type="button" class="btn-primary" onclick="calcularIMC()">Calcular IMC</button>
 
-            <!-- Campo hidden para enviar o IMC no post -->
-            <input type="hidden" asp-for="IMC" id="imcHidden" />
-        </div>
-
-        <div class="text-center mb-5">
-            <button type="submit" class="btn-primary">Salvar Avaliação</button>
-        </div>
-    </form>
-</div>
-
-<div class="section-title">Histórico de Avaliações</div>
-
-<div class="form-section">
-    <form method="get">
-        <label>De:</label>
-        <input type="date" asp-for="DataInicio" class="form-control" />
-
-        <label>Até:</label>
-        <input type="date" asp-for="DataFim" class="form-control" />
-
-        <button type="submit" class="btn-primary">Filtrar</button>
-    </form>
-
-    <br />
-
-    <table class="table table-bordered" style="width:100%; border:1px solid #ddd">
-        <thead style="background-color: orange; color: white;">
-            <tr>
-                <th>Data</th>
-                <th>Nome</th>
-                <th>Idade</th>
-                <th>Sexo</th>
-                <th>Peso</th>
-                <th>Altura</th>
-                <th>IMC</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model.AvaliacoesFiltradas)
-            {
-                <tr>
-                    <td>@item.Data.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@item.Nome</td>
-                    <td>@item.Idade</td>
-                    <td>@item.Sexo</td>
-                    <td>@item.Peso</td>
-                    <td>@item.Altura</td>
-                    <td style="color: @(item.IMC < 25 ? "green" : (item.IMC < 30 ? "orange" : "red"))">
-                        @item.IMC
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+            <div id="resultado"></div>
+        </form>
+    </div>
 </div>
 
 <script>
-    // Função para calcular IMC e atualizar o campo
     function calcularIMC() {
-        const pesoInput = document.getElementById('peso');
-        const alturaInput = document.getElementById('altura');
-        const imcInput = document.getElementById('imc');
-        const imcHidden = document.getElementById('imcHidden');
+        const peso = parseFloat(document.getElementById('Peso').value.replace(',', '.'));
+        const altura = parseFloat(document.getElementById('Altura').value.replace(',', '.'));
+        const resultado = document.getElementById('resultado');
 
-        const peso = parseFloat(pesoInput.value.replace(',', '.'));
-        const altura = parseFloat(alturaInput.value.replace(',', '.'));
-
-        if (!isNaN(peso) && !isNaN(altura) && altura > 0) {
-            const imc = peso / (altura * altura);
-            const imcFormatado = imc.toFixed(2);
-            imcInput.value = imcFormatado;
-            imcHidden.value = imcFormatado;  // Atualiza o campo hidden para envio no form
-        } else {
-            imcInput.value = '';
-            imcHidden.value = '';
+        if (isNaN(peso) || isNaN(altura) || altura <= 0) {
+            resultado.style.color = "red";
+            resultado.textContent = "Por favor, insira valores válidos de peso e altura.";
+            return;
         }
+
+        const imc = peso / (altura * altura);
+        const imcFormatado = imc.toFixed(2);
+
+        let classificacao = "";
+        let cor = "";
+
+        if (imc < 18.5) {
+            classificacao = "Abaixo do peso";
+            cor = "orange";
+        } else if (imc < 25) {
+            classificacao = "Peso normal";
+            cor = "green";
+        } else if (imc < 30) {
+            classificacao = "Sobrepeso";
+            cor = "orange";
+        } else if (imc < 35) {
+            classificacao = "Obesidade Grau I";
+            cor = "red";
+        } else if (imc < 40) {
+            classificacao = "Obesidade Grau II";
+            cor = "red";
+        } else {
+            classificacao = "Obesidade Grau III (mórbida)";
+            cor = "darkred";
+        }
+
+        resultado.style.color = cor;
+        resultado.innerHTML = `Seu IMC é <b>${imcFormatado}</b> — <span>${classificacao}</span>`;
     }
-
-    // Adiciona evento de input para recalcular ao digitar em peso ou altura
-    document.getElementById('peso').addEventListener('input', calcularIMC);
-    document.getElementById('altura').addEventListener('input', calcularIMC);
-
-    // Executa uma vez na carga da página para mostrar IMC se já houver valores
-    window.addEventListener('load', calcularIMC);
 </script>
