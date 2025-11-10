@@ -1,9 +1,7 @@
 ﻿@page
-@model APP_Academia.Pages.Shared.Financeiro.IndexModel  //financeiro
+@model APP_Academia.Pages.Shared.Financeiro.IndexModel
 @{
     ViewData["Title"] = "Financeiro";
-
-  
 }
 
 <!DOCTYPE html>
@@ -43,7 +41,6 @@
             color: white;
         }
 
-        /* Estilo para os badges de status */
         .badge-success {
             background-color: green;
             color: white;
@@ -53,96 +50,108 @@
             background-color: red;
             color: white;
         }
+
+        .badge-warning {
+            background-color: #ffcc00;
+            color: black;
+        }
     </style>
 </head>
 <body>
     <div class="container mt-5">
-        <!-- Título da página -->
+        <!-- Título -->
         <h2 class="text-center mb-4 d-inline-block">Resumo Financeiro</h2>
 
         <!-- Alerta de informação -->
         <div class="alert alert-info" role="alert">
-            <strong>Informação:</strong> Consulte os valores pagos e próximos pagamentos diretamente aqui.
+            <strong>Informação:</strong> Consulte seus valores pagos e próximos pagamentos aqui.
         </div>
 
         <!-- Cards de informações -->
         <div class="row">
             <!-- Valores Pagos -->
             <div class="col-md-6 mb-4">
-                <div class="card">
+                <div class="card shadow-sm">
                     <div class="card-header">
                         <h5>Valores Pagos</h5>
                     </div>
                     <div class="card-body">
-                        <p><strong>Último pagamento:</strong> R$ 150,00</p>
-                        <p><strong>Data do pagamento:</strong> 15/01/2025</p>
-                        <p><strong>Total pago até o momento:</strong> R$ 450,00</p>
+                        <p><strong>Último pagamento:</strong> @Model.UltimoPagamentoValor</p>
+                        <p><strong>Data do pagamento:</strong> @Model.UltimoPagamentoData</p>
+                        <p><strong>Total pago até o momento:</strong> @Model.TotalPago</p>
                     </div>
                 </div>
             </div>
 
             <!-- Próximos Pagamentos -->
             <div class="col-md-6 mb-4">
-                <div class="card">
+                <div class="card shadow-sm">
                     <div class="card-header">
                         <h5>Próximos Pagamentos</h5>
                     </div>
                     <div class="card-body">
-                        <p><strong>Próximo pagamento:</strong> R$ 150,00</p>
-                        <p><strong>Data do próximo pagamento:</strong> 15/02/2025</p>
+                        <p><strong>Próximo pagamento:</strong> @Model.ProximoPagamentoValor</p>
+                        <p><strong>Data do próximo pagamento:</strong> @Model.ProximoPagamentoData</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Histórico de Pagamentos -->
-        <div class="card mb-4">
+        <div class="card mb-4 shadow-sm">
             <div class="card-header">
                 <h5>Histórico de Pagamentos</h5>
             </div>
             <div class="card-body">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Serviço</th> <!-- Novo campo Serviço -->
-                            <th>Valor</th>
-                            <th>Status</th>
-                            
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>15/01/2025</td>
-                            <td>Musculação</td> <!-- Serviço correspondente -->
-                            <td>R$ 150,00</td>
-                            <td><span class="badge badge-success">Pago</span></td>
-                            
-                        </tr>
-                        <tr>
-                            <td>15/12/2024</td>
-                            <td>Boxe</td> <!-- Serviço correspondente -->
-                            <td>R$ 150,00</td>
-                            <td><span class="badge badge-success">Pago</span></td>
-                          
-                        </tr>
-                        <tr>
-                            <td>15/11/2024</td>
-                            <td>Musculação</td> <!-- Serviço correspondente -->
-                            <td>R$ 150,00</td>
-                            <td><span class="badge badge-danger">Em Atraso</span></td>
-                          
-                        </tr>
-                    </tbody>
-                </table>
+                @if (Model.Historico != null && Model.Historico.Count > 0)
+                {
+                    <table class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Serviço</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Historico)
+                            {
+                                var badgeClass = item.Status == "Pago"
+                                ? "badge-success"
+                                : (item.Status == "Em Atraso" ? "badge-danger" : "badge-warning");
+
+                                <tr>
+                                    <td>@item.Data</td>
+                                    <td>@item.Servico</td>
+                                    <td>@item.Valor</td>
+                                    <td><span class="badge @badgeClass">@item.Status</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p class="text-center text-muted">Nenhum pagamento encontrado.</p>
+                }
             </div>
         </div>
 
-
         <!-- Botão para atualizar -->
         <div class="text-center">
-            <button class="btn btn-primary">Atualizar informações</button>
+            <form method="get">
+                <button type="submit" class="btn btn-primary">Atualizar informações</button>
+            </form>
         </div>
+
+        <!-- Mensagem de erro (se houver) -->
+        @if (!string.IsNullOrEmpty(Model.Mensagem))
+        {
+            <div class="alert alert-danger text-center mt-3 py-2 rounded-4">
+                @Model.Mensagem
+            </div>
+        }
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"></script>
