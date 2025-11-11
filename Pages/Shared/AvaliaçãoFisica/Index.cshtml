@@ -1,7 +1,7 @@
 ﻿@page
 @model APP_SITE_ACADEMIA.Pages.Shared.AvaliacaoFisica.IndexModel
 @{
-    ViewData["Title"] = "Cálculo de IMC";
+    ViewData["Title"] = "Avaliação Física";
     Layout = "_Layout";
 }
 
@@ -51,15 +51,42 @@
         width: 100%;
     }
 
-        .btn-primary:hover {
-            background-color: #e69500;
-        }
+    th {
+        background-color: orange !important;
+        color: white !important;
+    }
 
     #resultado {
         margin-top: 15px;
         font-weight: bold;
         text-align: center;
         font-size: 1.2em;
+    }
+
+    /* 🔹 Tabelas */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 30px;
+        text-align: center;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+    }
+
+    th {
+        background-color: orange;
+        color: white;
+    }
+
+    tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+
+    tr:hover {
+        background-color: #ffeccc;
     }
 </style>
 
@@ -69,16 +96,100 @@
     <div class="form-section">
         <form method="post">
             <label>Peso (kg):</label>
-            <input asp-for="Peso" type="number" step="0.1" class="form-control" placeholder="Ex: 70" />
+            <input asp-for="Peso" id="Peso" type="number" step="0.1" class="form-control" placeholder="Ex: 70" />
 
             <label>Altura (m):</label>
-            <input asp-for="Altura" type="number" step="0.01" class="form-control" placeholder="Ex: 1.75" />
+            <input asp-for="Altura" id="Altura" type="number" step="0.01" class="form-control" placeholder="Ex: 1.75" />
 
             <button type="button" class="btn-primary" onclick="calcularIMC()">Calcular IMC</button>
 
             <div id="resultado"></div>
         </form>
     </div>
+
+    <!-- 🔽🔽🔽 COMPLEMENTO ADICIONADO AQUI 🔽🔽🔽 -->
+
+    <hr />
+    <h3 class="text-center mt-5">Histórico de IMC</h3>
+
+    <table class="table table-striped text-center">
+        <thead>
+            <tr>
+                <th>Peso</th>
+                <th>Altura</th>
+                <th>Resultado</th>
+                <th>Data</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.ListaIMC != null && Model.ListaIMC.Count > 0)
+            {
+                foreach (var item in Model.ListaIMC)
+                {
+                    <tr>
+                        <td>@item.Peso</td>
+                        <td>@item.Altura</td>
+                        <td>@item.Resultado</td>
+                        <td>@item.Data</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="4">Nenhum IMC registrado ainda.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <hr />
+    <h3 class="text-center mt-5">Histórico de Avaliação Física</h3>
+
+    <table class="table table-striped text-center">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Braço D.</th>
+                <th>Braço E.</th>
+                <th>Cintura</th>
+                <th>Abdômen</th>
+                <th>Coxa D.</th>
+                <th>Coxa E.</th>
+                <th>Pant. D.</th>
+                <th>Pant. E.</th>
+                <th>Pressão</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.ListaAvaliacoes != null && Model.ListaAvaliacoes.Count > 0)
+            {
+                foreach (var item in Model.ListaAvaliacoes)
+                {
+                    <tr>
+                        <td>@item.Data</td>
+                        <td>@item.BracoDireito</td>
+                        <td>@item.BracoEsquerdo</td>
+                        <td>@item.Cintura</td>
+                        <td>@item.Abdomen</td>
+                        <td>@item.CoxaDireita</td>
+                        <td>@item.CoxaEsquerda</td>
+                        <td>@item.PanturrilhaDireita</td>
+                        <td>@item.PanturrilhaEsquerda</td>
+                        <td>@item.PressaoArterial</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="10">Nenhuma avaliação física encontrada.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- 🔼🔼🔼 FIM DO COMPLEMENTO 🔼🔼🔼 -->
 </div>
 
 <script>
