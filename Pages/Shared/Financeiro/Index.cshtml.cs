@@ -41,17 +41,20 @@ namespace APP_Academia.Pages.Shared.Financeiro
 
                 // 🔹 Consulta com INNER JOIN trazendo o nome do serviço
                 string sql = $@"
-                    SELECT 
-                        p.DataVencimento,
-                        p.DataPagamento,
-                        p.ValorDevido,
-                        s.Nome AS NomeServico,
-                        p.FormaDePagamento
-                    FROM Pagamentos p
-                    INNER JOIN Servicos s 
-                        ON p.fk_ServicosCadastrado = s.Codigo
-                    WHERE p.fk_CodigoPessoa = '{codigoPessoa}'
-                    ORDER BY p.DataVencimento DESC";
+    SELECT 
+        p.DataVencimento,
+        p.DataPagamento,
+        p.ValorDevido,
+        s.Nome AS NomeServico,
+        p.FormaDePagamento
+    FROM Pagamentos p
+    INNER JOIN ServicosCadastrados sc 
+        ON p.fk_ServicosCadastrado = sc.Codigo
+    INNER JOIN Servicos s 
+        ON sc.fk_Servico = s.Codigo
+    WHERE p.fk_CodigoPessoa = '{codigoPessoa}'
+    ORDER BY p.DataVencimento DESC";
+
 
                 var tabela = await banco.ExecutarConsultaPublicaAsync(sql);
 
