@@ -37,7 +37,7 @@ namespace APP_Academia.Pages.Shared.Financeiro
 
                 // 🔹 Faz conexão com o banco
                 var banco = new clsBancoNuvem("https://cflv2aczvz.g2.sqlite.cloud/v2/weblite/sql", apiKey, "SGA");
-
+n
 
                 string sql = $@"
                     SELECT 
