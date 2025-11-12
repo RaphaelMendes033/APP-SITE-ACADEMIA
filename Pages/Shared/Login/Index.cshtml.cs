@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using APP_SITE_ACADEMIA.Classes;
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace APP_SITE_ACADEMIA.Pages.Shared.Login
 {
@@ -20,16 +21,16 @@ namespace APP_SITE_ACADEMIA.Pages.Shared.Login
             {
                 var bancoPrincipal = new clsBancoNuvem();
 
-                // 🔹 Valida login e obtém API Key da empresa
-                string apiKeyEmpresa = await bancoPrincipal.ObterApiKeyDaNuvemAsync(Documento, Senha);
+                // 🔹 Faz login e obtém o nome do banco da empresa
+                string nomeBancoEmpresa = await bancoPrincipal.ObterApiKeyDaNuvemAsync(Documento, Senha);
 
-                // 🔹 Armazena informações temporárias para a Home
-                TempData["APIkeyEmpresa"] = apiKeyEmpresa;
-                TempData["NomeAluno"] = Documento;
-                TempData["CodigoPessoa"] = "1";
+                // 🔹 Armazena informações na sessão
+                HttpContext.Session.SetString("BancoEmpresa", nomeBancoEmpresa);
+                HttpContext.Session.SetString("DocumentoUsuario", Documento);
+                HttpContext.Session.SetString("Logado", "true");
 
-                // ✅ Redireciona e envia também via querystring
-                return RedirectToPage("/Shared/Home/Index", new { api = apiKeyEmpresa, nome = Documento });
+                // ✅ Redireciona para a Home
+                return RedirectToPage("/Shared/Home/Index");
             }
             catch (Exception ex)
             {
@@ -38,17 +39,14 @@ namespace APP_SITE_ACADEMIA.Pages.Shared.Login
             }
         }
 
-        // 🔹 Teste de conexão (chamado quando a página de login é aberta)
+        // 🔹 Teste de conexão (quando a página de login é aberta)
         public async Task OnGetAsync()
         {
             try
             {
                 var bancoTeste = new clsBancoNuvem();
-                bool conectado = await bancoTeste.TestarConexaoAsync();
-
-                Mensagem = conectado
-                    ? "✅ Conexão com o banco principal estabelecida com sucesso!"
-                    : "❌ Falha ao conectar com o banco principal.";
+                string resultado = await bancoTeste.TestarConexaoAsync();
+                Mensagem = resultado;
             }
             catch (Exception ex)
             {
