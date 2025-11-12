@@ -1,257 +1,110 @@
 ﻿using Newtonsoft.Json;
+using System;
 using System.Data;
+using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
+using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace APP_SITE_ACADEMIA.Classes
 {
     public class clsBancoNuvem
     {
-        // --- ajuste esses valores se necessário ---
-        private static readonly string apiUrl = "https://cflv2aczvz.g2.sqlite.cloud/v2/weblite/sql";
-        private static readonly string apiKey = "B4xLGomzkME8p9AliBrdGJHKGiqt2KEGHPrjDZZ51Os"; // sua chave admin
-        private static readonly string databaseName = "SGA"; // ou "SGA.sqlite" se seu painel exigir
+        private readonly string apiUrl;
+        private readonly string apiKey;
+        private readonly string databaseName;
 
-        /// <summary>
-        /// Retorna o nome da empresa cujo Documento = cnpj e Id = codigo.
-        /// Retorna null se não encontrar.
-        /// </summary>
-        public async Task<string> ObterNomeEmpresaAsync(string cnpj, string codigo)
+        // 🔹 Construtor padrão (usa seus valores fixos)
+        public clsBancoNuvem()
+        {
+            apiUrl = "https://cflv2aczvz.g2.sqlite.cloud/v2/weblite/sql";
+            apiKey = "B4xLGomzkME8p9AliBrdGJHKGiqt2KEGHPrjDZZ51Os"; // ADMIN
+            databaseName = "SGA";
+        }
+
+        // 🔹 Construtor opcional (permite outros bancos, se precisar no futuro)
+        public clsBancoNuvem(string url, string key, string db)
+        {
+            apiUrl = url;
+            apiKey = key;
+            databaseName = db;
+        }
+
+        // 🔹 Testa conexão com o banco
+        public async Task<bool> TestarConexaoAsync()
         {
             try
             {
-                // sanitize simples
-                cnpj = (cnpj ?? "").Trim();
-                codigo = (codigo ?? "").Trim();
+                string sql = "SELECT name FROM sqlite_master WHERE type='table' LIMIT 1;";
 
-                if (string.IsNullOrEmpty(cnpj) || string.IsNullOrEmpty(codigo))
-                    return null;
-
-                // Monta o SELECT (LIMIT 1)
-                string sql = $"SELECT Nome FROM Empresas WHERE Documento = '{EscapeSql(cnpj)}' AND Codigo = '{EscapeSql(codigo)}' LIMIT 1";
-
-                // Executa via WebLite
-                var tabela = await ExecutarConsultaAsync(sql);
-
-                if (tabela != null && tabela.Rows.Count > 0 && tabela.Columns.Contains("Nome"))
+                using (var client = new HttpClient())
                 {
-                    return tabela.Rows[0]["Nome"]?.ToString();
-                }
+                    client.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue("Bearer", apiKey);
 
-                // Caso a API retorne com outro nome de coluna (ex: nome com case diferente)
-                if (tabela != null && tabela.Rows.Count > 0 && tabela.Columns.Count > 0)
-                {
-                    return tabela.Rows[0][0]?.ToString();
-                }
+                    var json = JsonConvert.SerializeObject(new { database = databaseName, sql });
+                    var response = await client.PostAsync(apiUrl, new StringContent(json, Encoding.UTF8, "application/json"));
 
-                return null;
+                    return response.IsSuccessStatusCode;
+                }
             }
             catch
             {
-                return null;
+                return false;
             }
         }
 
-        /// <summary>
-        /// Executa um SELECT via WebLite e converte o resultado em DataTable.
-        /// </summary>
-        private async Task<DataTable> ExecutarConsultaAsync(string sql)
+        // 🔹 Obtém API Key da empresa (login)
+        // 🔹 Obtém API Key da empresa (login)
+        public async Task<string> ObterApiKeyDaNuvemAsync(string documento, string senha)
         {
+            string sql = $@"
+        SELECT ApiKey
+        FROM Empresas
+        WHERE Documento = '{documento}'
+        AND Senha = '{senha}'
+        LIMIT 1;
+    ";
+
             using (var client = new HttpClient())
             {
-                // Headers
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", apiKey);
 
-                // Payload conforme WebLite (incluir database + sql)
-                var payload = new
+                // ✅ Novo formato aceito pelo endpoint /v2/weblite/sql
+                var body = new
                 {
-                    database = databaseName,
-                    sql = sql
+                    data = new
+                    {
+                        database = databaseName,
+                        sql
+                    }
                 };
 
-                string json = JsonConvert.SerializeObject(payload);
-                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-
-                var response = await client.PostAsync(apiUrl, content);
-                string responseBody = await response.Content.ReadAsStringAsync();
+                var json = JsonConvert.SerializeObject(body);
+                var response = await client.PostAsync(apiUrl, new StringContent(json, Encoding.UTF8, "application/json"));
+                string result = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
+                    throw new Exception($"Erro ao consultar a nuvem. Status HTTP: {response.StatusCode}. Resposta: {result}");
+
+                var data = JObject.Parse(result);
+
+                // 🔍 Novo formato do retorno padronizado (v2)
+                if (data["data"] != null &&
+                    data["data"]["rows"] != null &&
+                    data["data"]["rows"].HasValues)
                 {
-                    // opcional: lançar exceção com o body para debug
-                    throw new Exception($"Erro na requisição WebLite: {(int)response.StatusCode}\n{responseBody}");
+                    return data["data"]["rows"][0][0]?.ToString()
+                        ?? throw new Exception("API Key não encontrada.");
                 }
-
-                // Tenta interpretar o JSON retornado.
-                // A API WebLite costuma retornar um JSON com um campo "data" contendo linhas (cada linha é um objeto com colunas).
-                var tabela = new DataTable();
-
-                try
+                else
                 {
-                    dynamic jsonResult = JsonConvert.DeserializeObject(responseBody);
-
-                    // Forma 1: resposta com "data" (cada item é objeto com propriedades = colunas)
-                    if (jsonResult != null && jsonResult.data != null && jsonResult.data.Count > 0)
-                    {
-                        // cria colunas a partir da primeira linha
-                        var primeira = jsonResult.data[0];
-                        foreach (var prop in primeira)
-                        {
-                            var jprop = (Newtonsoft.Json.Linq.JProperty)prop;
-                            if (!tabela.Columns.Contains(jprop.Name))
-                                tabela.Columns.Add(jprop.Name);
-                        }
-
-                        // preenche linhas
-                        foreach (var linha in jsonResult.data)
-                        {
-                            var row = tabela.NewRow();
-                            foreach (var prop in linha)
-                            {
-                                var jprop = (Newtonsoft.Json.Linq.JProperty)prop;
-                                row[jprop.Name] = jprop.Value?.ToString() ?? string.Empty;
-                            }
-                            tabela.Rows.Add(row);
-                        }
-
-                        return tabela;
-                    }
-
-                    // Forma 2: algumas variantes devolvem um array de arrays ou outra estrutura.
-                    // Tentamos um fallback: procurar por results/response/rows (formas que vimos em respostas anteriores).
-                    try
-                    {
-                        // Exemplo de caminho alternativo: data in data[0].results[0].response[0].rows...
-                        var possible = jsonResult[0]?.results?[0]?.response?[0]?.rows;
-                        if (possible != null && possible.Count > 0)
-                        {
-                            // possible é array de arrays, sem nomes de coluna: best-effort - precisamos das colunas manualmente
-                            // neste caso retornamos um DataTable com col1, col2...
-                            int cols = possible[0].Count;
-                            for (int c = 0; c < cols; c++)
-                                tabela.Columns.Add("col" + (c + 1));
-
-                            foreach (var rowArr in possible)
-                            {
-                                var row = tabela.NewRow();
-                                for (int c = 0; c < cols; c++)
-                                    row[c] = rowArr[c]?.ToString() ?? string.Empty;
-                                tabela.Rows.Add(row);
-                            }
-
-                            return tabela;
-                        }
-                    }
-                    catch
-                    {
-                        // não conseguiu interpretar fallback
-                    }
-
-                    // Se não reconheceu formato, retorna DataTable vazio
-                    return tabela;
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception("Erro ao interpretar JSON retornado da API WebLite: " + ex.Message + "\n\n" + responseBody);
+                    throw new Exception("❌ Usuário ou senha inválido, ou usuário inativo.");
                 }
             }
         }
-
-        // Pequena sanitação para evitar inserir aspas direto no SQL (não substitui parametrização completa,
-        // porém é aceitável para teste rápido; em produção use procedimentos seguros)
-        private string EscapeSql(string value)
-        {
-            if (string.IsNullOrEmpty(value)) return value;
-            return value.Replace("'", "''");
-        }
-
-
-
-
-
-
-        // faz o Select de autenticação do usuario   //Ativo é campo numerico 1 = ativo   /   0 = bloqueado
-       
-        public async Task<string?> ValidarLoginPessoaAsync(string codigoNuvem, string documento, string senha)
-        {
-            try
-            {
-                // 🔹 Remove tudo que não for número do documento
-                string docNumeros = System.Text.RegularExpressions.Regex.Replace(documento ?? "", @"\D", "");
-
-                // 🔹 Busca o usuário (independente de senha e ativo)
-                string sqlUsuario = $@"
-            SELECT Nome, Senha, Ativo
-            FROM Pessoas
-            WHERE fk_CodigoNuvem = '{EscapeSql(codigoNuvem)}'
-              AND Documento = '{EscapeSql(docNumeros)}'
-            LIMIT 1";
-
-                var tabela = await ExecutarConsultaAsync(sqlUsuario);
-
-                // 🔹 Caso não encontre o usuário
-                if (tabela == null || tabela.Rows.Count == 0)
-                    return "Usuário ou senha inválido.";
-
-                var row = tabela.Rows[0];
-                string senhaBanco = row["Senha"]?.ToString() ?? "";
-                int ativo = Convert.ToInt32(row["Ativo"]);
-
-                // 🔹 Verifica se está bloqueado
-                if (ativo != 1)
-                    return "Usuário bloqueado.";
-
-                // 🔹 Verifica se a senha confere
-                if (!string.Equals(senhaBanco, senha))
-                    return "Usuário ou senha inválido.";
-
-                // 🔹 Retorna nome se tudo ok
-                return row["Nome"]?.ToString();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Erro ao validar login: {ex.Message}");
-                return "Erro interno ao validar login.";
-            }
-        }
-
-
-        //public async Task<string?> ValidarLoginPessoaAsync(string codigoNuvem, string documento, string senha)
-        //{
-        //    try
-        //    {
-        //        // 🔹 Remove tudo que não for número do documento
-        //        string docNumeros = System.Text.RegularExpressions.Regex.Replace(documento ?? "", @"\D", "");
-
-        //        // 🔹 Monta a query conforme sua tabela
-        //        string sql = $@"
-        //    SELECT Nome
-        //    FROM Pessoas
-        //    WHERE fk_CodigoNuvem = '{EscapeSql(codigoNuvem)}'
-        //      AND Documento = '{EscapeSql(docNumeros)}'
-        //      AND Senha = '{EscapeSql(senha)}'
-        //      AND Ativo = 1
-        //    LIMIT 1";
-
-        //        // 🔹 Executa no banco
-        //        var tabela = await ExecutarConsultaAsync(sql);
-
-        //        if (tabela != null && tabela.Rows.Count > 0)
-        //        {
-        //            return tabela.Rows[0]["Nome"]?.ToString();
-        //        }
-
-        //        // 🔹 Retorna null se não encontrou ou está bloqueado
-        //        return null;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"Erro ao validar login: {ex.Message}");
-        //        return null;
-        //    }
-        //}
-
-
-
 
 
 

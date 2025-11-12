@@ -4,6 +4,14 @@
     ViewData["Title"] = "Página Inicial";
 }
 
+@if (!string.IsNullOrEmpty(Model.Mensagem))
+{
+    <div style="margin-top:15px; color:darkorange; font-weight:bold;">
+        @Model.Mensagem
+    </div>
+}
+
+
 <div class="container text-center mt-5">
     <h1 class="display-4 mb-4">Bem-vindo à Academia</h1>
 
@@ -34,21 +42,16 @@
 
         botao.addEventListener("click", function () {
             if (!treinoAtivo) {
-                // Inicia o treino (zera e começa do zero)
                 tempoSegundos = 0;
                 tempoDisplay.textContent = "00:00:00";
                 treinoAtivo = true;
-
                 botao.textContent = "Encerrar Treino";
                 botao.classList.remove("btn-success");
                 botao.classList.add("btn-danger");
-
                 intervalo = setInterval(atualizarTempo, 1000);
             } else {
-                // Encerra o treino
                 treinoAtivo = false;
                 clearInterval(intervalo);
-
                 botao.textContent = "Iniciar Treino";
                 botao.classList.remove("btn-danger");
                 botao.classList.add("btn-success");
@@ -56,25 +59,17 @@
         });
     </script>
 
-    <label id="dataHora" class="mt-3" style="font-size: 16px;"></label>
-    <label id="dataHoraEncerramento" class="mt-3" style="font-size: 16px; display: none;"></label>
-    <label id="duracaoTreino" class="mt-3" style="font-size: 16px;"></label>
-
     <div class="mt-4 mb-5">
         <h4 class="font-weight-bold">Selecione o dia da semana:</h4>
         <div class="btn-group btn-group-toggle" data-toggle="buttons">
             @{
-                // ordem fixa de segunda a domingo
                 var ordemDias = new[] { "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo" };
-
-                // normaliza os dias vindos do banco (remove espaços e põe primeira letra maiúscula)
                 var diasDisponiveis = Model.ListaTreinos
                 .Select(t => t.DiaSemana?.Trim())
                 .Where(d => !string.IsNullOrEmpty(d))
                 .Distinct()
                 .OrderBy(d =>
                 {
-                    // tenta encontrar o índice do dia correspondente (mesmo se vier "segunda-feira" etc.)
                     var match = ordemDias.FirstOrDefault(o =>
                             d.StartsWith(o, StringComparison.OrdinalIgnoreCase));
                     return match != null ? Array.IndexOf(ordemDias, match) : 999;
@@ -87,11 +82,8 @@
                     <input type="radio" name="diasSemana" value="@dia"> @dia
                 </label>
             }
-
-
         </div>
     </div>
-
 
     <div id="treino" class="mt-4">
         <h4 class="font-weight-bold">Treino do Dia</h4>
@@ -127,8 +119,6 @@
         });
     </script>
 }
-
-
 
 <style>
     .btn-group-toggle .btn {
