@@ -15,6 +15,19 @@ namespace APP_SITE_ACADEMIA.Pages.Shared.Login
         [BindProperty] public string Senha { get; set; }
         public string Mensagem { get; set; }
 
+        // 🔹 Evento chamado via AJAX (quando o usuário sai do campo NomeBanco)
+        public async Task<JsonResult> OnGetBuscarEmpresaAsync(string nomeBanco)
+        {
+            var bancoNuvem = new clsBancoNuvem();
+            var resultado = await bancoNuvem.BuscarEmpresaAsync(nomeBanco);
+
+            if (resultado.Sucesso)
+                return new JsonResult(new { sucesso = true, nome = resultado.NomeEmpresa });
+            else
+                return new JsonResult(new { sucesso = false, erro = resultado.Erro });
+        }
+
+        // 🔹 Login principal (botão "Entrar")
         public async Task<IActionResult> OnPostAsync()
         {
             try
@@ -28,6 +41,16 @@ namespace APP_SITE_ACADEMIA.Pages.Shared.Login
                 }
 
                 var bancoNuvem = new clsBancoNuvem();
+
+                // 🔹 (Etapa 1) Valida a existência do banco antes de tentar logar
+                var resultadoEmpresa = await bancoNuvem.BuscarEmpresaAsync(NomeBanco);
+                if (!resultadoEmpresa.Sucesso)
+                {
+                    Mensagem = resultadoEmpresa.Erro;
+                    return Page();
+                }
+
+                // 🔹 (Etapa 2) Faz login no banco da empresa
                 string resultado = await bancoNuvem.FazerLoginAsync(NomeBanco, Documento, Senha);
 
                 if (!bancoNuvem.Logado)
@@ -45,13 +68,12 @@ namespace APP_SITE_ACADEMIA.Pages.Shared.Login
                 SessaoNuvem.BancoAtual = NomeBanco;
                 SessaoNuvem.DocumentoUsuario = Documento;
 
-
                 // ✅ Redireciona para Home
                 return RedirectToPage("/Shared/Home/Index");
             }
             catch (Exception ex)
             {
-                Mensagem = $"❌ Erro de login:  {ex.Message}";
+                Mensagem = $"❌ Erro de login: {ex.Message}";
                 return Page();
             }
         }

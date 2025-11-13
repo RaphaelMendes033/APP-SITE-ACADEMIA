@@ -15,7 +15,10 @@
             <div class="form-floating mb-3">
                 <input type="text" asp-for="NomeBanco" class="form-control rounded-4" id="nomeBanco" placeholder="Nome do Banco" required />
                 <label for="nomeBanco">Nome do Banco</label>
+                <div id="lblEmpresa" class="text-center text-success fw-semibold mb-3" style="display:none;"></div>
             </div>
+           
+
 
             <div class="form-floating mb-3">
                 <input type="text" asp-for="Documento" class="form-control rounded-4" id="documento" placeholder="CPF" required />
@@ -43,10 +46,35 @@
 
 @section Scripts {
     <script>
-        document.getElementById('loginForm').addEventListener('submit', function () {
-            var btn = document.getElementById('btnEntrar');
-            btn.disabled = true;
-            btn.innerHTML = 'Aguarde, carregando...';
+        const campoBanco = document.getElementById('nomeBanco');
+        const lblEmpresa = document.getElementById('lblEmpresa');
+
+        campoBanco.addEventListener('blur', async function () {
+            const numeroBanco = this.value.trim();
+            if (!numeroBanco) return;
+
+            lblEmpresa.style.display = "none";
+            lblEmpresa.textContent = "";
+
+            try {
+                const resp = await fetch(`?handler=BuscarEmpresa&numeroBanco=${encodeURIComponent(numeroBanco)}`);
+                const data = await resp.json();
+
+                if (data.sucesso) {
+                    lblEmpresa.textContent = `✅ Empresa encontrada: ${data.nome}`;
+                    lblEmpresa.style.display = "block";
+                } else {
+                    lblEmpresa.textContent = data.erro || "❌ Empresa não encontrada.";
+                    lblEmpresa.classList.replace("text-success", "text-danger");
+                    lblEmpresa.style.display = "block";
+                }
+            } catch {
+                lblEmpresa.textContent = "❌ Erro de conexão.";
+                lblEmpresa.classList.replace("text-success", "text-danger");
+                lblEmpresa.style.display = "block";
+            }
         });
     </script>
 }
+
+
