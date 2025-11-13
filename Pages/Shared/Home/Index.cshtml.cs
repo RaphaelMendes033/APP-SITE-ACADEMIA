@@ -13,37 +13,31 @@ namespace APP_SITE_ACADEMIA.Pages.Shared.Home
         public string ApiKey { get; set; }
         public List<Treino> ListaTreinos { get; set; } = new List<Treino>();
 
-        public async Task<IActionResult> OnGetAsync(string api, string nome)
+        public async Task<IActionResult> OnGetAsync()
         {
-            // ✅ Recupera dados do login
-            ApiKey = api ?? TempData["APIkeyEmpresa"]?.ToString();
-            NomeAluno = nome ?? TempData["NomeAluno"]?.ToString();
+            // 🔒 Verifica login
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("Logado")))
+                return RedirectToPage("/Shared/Login/Index");
 
-            if (string.IsNullOrEmpty(ApiKey) || string.IsNullOrEmpty(NomeAluno))
-            {
-                // ⚠️ Caso falte algo, volta pro login
-                return Redirect("~/Shared/Login/Index");
-            }
-
-            try
-            {
-                // 🔹 Aqui você poderá buscar os treinos do aluno usando ApiKey
-                // var banco = new clsBancoNuvem();
-                // ListaTreinos = await banco.ObterTreinosDoAlunoAsync(ApiKey, NomeAluno);
-
-                // if (ListaTreinos == null || ListaTreinos.Count == 0)
-                //     Mensagem = "⚠️ Nenhum treino encontrado para este aluno.";
-
-                Mensagem = "✅ Login realizado com sucesso! API conectada.";
-            }
-            catch (System.Exception ex)
-            {
-                Mensagem = "❌ Erro ao carregar treinos: " + ex.Message;
-            }
+            // Exemplo: recuperar nome do usuário logado
+            var documento = HttpContext.Session.GetString("Documento");
+            Mensagem = $"Bem-vindo! Documento: {documento}";
 
             return Page();
         }
+
+       
+
+
+
+
+
+
     }
+
+
+
+
 
     public class Treino
     {

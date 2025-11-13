@@ -11,46 +11,50 @@ namespace APP_SITE_ACADEMIA.Pages.Shared.Login
     {
         [BindProperty] public string Documento { get; set; }
         [BindProperty] public string Senha { get; set; }
-
         public string Mensagem { get; set; }
 
-        // 🔹 Evento de envio do formulário (LOGIN)
         public async Task<IActionResult> OnPostAsync()
         {
             try
             {
-                var bancoPrincipal = new clsBancoNuvem();
+                // 🔹 Validação inicial
+                if (string.IsNullOrWhiteSpace(Documento) || string.IsNullOrWhiteSpace(Senha))
+                {
+                    Mensagem = "❌ Informe o documento e a senha.";
+                    return Page();
+                }
 
-                // 🔹 Faz login e obtém o nome do banco da empresa
-                string nomeBancoEmpresa = await bancoPrincipal.ObterApiKeyDaNuvemAsync(Documento, Senha);
+                var bancoNuvem = new clsBancoNuvem();
+                string resultado = await bancoNuvem.ObterApiKeyDaNuvemAsync(Documento, Senha);
 
-                // 🔹 Armazena informações na sessão
-                HttpContext.Session.SetString("BancoEmpresa", nomeBancoEmpresa);
-                HttpContext.Session.SetString("DocumentoUsuario", Documento);
+                if (resultado.Contains("Usuário não encontrado"))
+                {
+                    Mensagem = "❌ Usuário não encontrado.";
+                    return Page();
+                }
+                else if (resultado.Contains("Usuário bloqueado"))
+                {
+                    Mensagem = "❌ Usuário bloqueado.";
+                    return Page();
+                }
+                else if (resultado.Contains("Erro ao consultar"))
+                {
+                    Mensagem = "❌ Erro ao consultar a nuvem.";
+                    return Page();
+                }
+
+                // ✅ Login bem-sucedido → grava sessão
                 HttpContext.Session.SetString("Logado", "true");
+                HttpContext.Session.SetString("Documento", Documento);
+                HttpContext.Session.SetString("ApiKey", resultado);
 
-                // ✅ Redireciona para a Home
+                // ✅ Redireciona corretamente para Home
                 return RedirectToPage("/Shared/Home/Index");
             }
             catch (Exception ex)
             {
-                Mensagem = "❌ Erro ao tentar realizar login: " + ex.Message;
+                Mensagem = $"❌ Erro ao tentar realizar login: {ex.Message}";
                 return Page();
-            }
-        }
-
-        // 🔹 Teste de conexão (quando a página de login é aberta)
-        public async Task OnGetAsync()
-        {
-            try
-            {
-                var bancoTeste = new clsBancoNuvem();
-                string resultado = await bancoTeste.TestarConexaoAsync();
-                Mensagem = resultado;
-            }
-            catch (Exception ex)
-            {
-                Mensagem = "❌ Erro ao testar conexão: " + ex.Message;
             }
         }
     }
