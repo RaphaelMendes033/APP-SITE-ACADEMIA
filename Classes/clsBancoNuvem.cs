@@ -3,7 +3,6 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,122 +10,153 @@ namespace APP_SITE_ACADEMIA.Classes
 {
     public class clsBancoNuvem
     {
-        private readonly string apiUrl = "https://cflv2aczvz.g2.sqlite.cloud/v2/weblite/sql"; // 🔹 Fixo
-        private readonly string apiKey = "B4xLGomzkME8p9AliBrdGJHKGiqt2KEGHPrjDZZ51Os";     // 🔹 Sempre o mesmo
-        private readonly string bancoPrincipal = "SGA"; // 🔹 Banco principal com Empresas e Usuarios
+        // 🔹 Configurações fixas
+        private readonly string apiUrl = "https://cflv2aczvz.g2.sqlite.cloud/v2/weblite/sql";
+        private readonly string apiKey = "B4xLGomzkME8p9AliBrdGJHKGiqt2KEGHPrjDZZ51Os";
 
         public string BancoEmpresa { get; private set; } = "";
-        public string NomeEmpresa { get; private set; } = "";
-        public string DocumentoEmpresa { get; private set; } = "";
         public bool Logado { get; private set; } = false;
 
-        // 🔹 Testa a conexão básica com o banco principal
-        public async Task<string> TestarConexaoAsync()
+        // 🔹 Testa conexão com o banco informado
+
+
+
+
+        public static class SessaoNuvem
+        {
+            public static string BancoAtual { get; set; } = "";
+            public static string DocumentoUsuario { get; set; } = "";
+            public static bool Logado => !string.IsNullOrEmpty(BancoAtual);
+        }
+
+
+
+
+
+
+
+
+
+        public async Task<string> TestarConexaoBancoAsync(string nomeBanco)
         {
             try
             {
-                // 🔸 Ignora validação de certificado SSL (caso o servidor SQLite Cloud esteja com certificado intermediário)
-                var handler = new HttpClientHandler
-                {
-                    ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
-                };
-
-                using (var client = new HttpClient(handler))
+                using (var client = new HttpClient())
                 {
                     client.DefaultRequestHeaders.Authorization =
                         new AuthenticationHeaderValue("Bearer", apiKey);
 
-                    string sql = "SELECT 1;";
-
                     var body = new
                     {
-                        database = bancoPrincipal,
-                        sql
+                        database = nomeBanco,
+                        sql = "SELECT 1;"
                     };
 
                     var json = JsonConvert.SerializeObject(body);
-
-                    var response = await client.PostAsync(apiUrl,
-                        new StringContent(json, Encoding.UTF8, "application/json"));
-
+                    var response = await client.PostAsync(apiUrl, new StringContent(json, Encoding.UTF8, "application/json"));
                     string result = await response.Content.ReadAsStringAsync();
 
                     if (response.IsSuccessStatusCode)
-                        return "✅ Conectado com sucesso ao banco principal.";
+                        return "✅ Conectado com sucesso ao banco informado.";
                     else
                         return $"❌ Falha na conexão. Status: {response.StatusCode}. Resposta: {result}";
                 }
             }
-            catch (HttpRequestException ex)
-            {
-                return $"❌ Erro de conexão HTTP: {ex.Message}";
-            }
             catch (Exception ex)
             {
-                return $"❌ Erro ao testar conexão: {ex.Message}";
+                return $"❌ Erro ao testar conexão com o banco {nomeBanco}: {ex.Message}";
             }
         }
 
-        // 🔹 Faz login do usuário (documento + senha)
-        public async Task<string> ObterApiKeyDaNuvemAsync(string documento, string senha)
+        // 🔹 Faz login dentro do banco informado
+        public async Task<string> FazerLoginAsync(string nomeBanco, string documento, string senha)
         {
+            if (string.IsNullOrWhiteSpace(nomeBanco))
+                throw new Exception("O nome do banco não foi informado.");
+
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Authorization =
                     new AuthenticationHeaderValue("Bearer", apiKey);
 
                 string sql = $@"
-                    SELECT e.NomeBanco
-                    FROM Usuarios u
-                    INNER JOIN Empresas e ON e.Codigo = u.fk_empresa
-                    WHERE u.Documento = '{documento}'
-                    AND u.Senha = '{senha}'
-                    AND u.Ativo = 1
-                    LIMIT 1;";
+            SELECT Nome, Ativo
+            FROM Usuarios
+            WHERE Documento = '{documento}'
+            AND Senha = '{senha}'
+            LIMIT 1;";
 
                 var body = new
                 {
-                    database = bancoPrincipal,
+                    database = nomeBanco,
                     sql
                 };
 
                 var json = JsonConvert.SerializeObject(body);
-                var response = await client.PostAsync(apiUrl,
-                    new StringContent(json, Encoding.UTF8, "application/json"));
-
-                string result = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                    throw new Exception($"Erro ao consultar a nuvem. Status HTTP: {response.StatusCode}. Resposta: {result}");
+                HttpResponseMessage response;
 
                 try
                 {
-                    var data = JObject.Parse(result);
+                    response = await client.PostAsync(apiUrl, new StringContent(json, Encoding.UTF8, "application/json"));
+                }
+                catch (HttpRequestException)
+                {
+                    // 🔹 Erro de rede ou banco inexistente
+                    throw new Exception("❌ Banco de dados não encontrado ou inacessível.");
+                }
 
-                    // ✅ Novo formato: data = [ { "NomeBanco": "teste-cliente-academia" } ]
-                    if (data["data"] is JArray arr && arr.Count > 0)
+                string result = await response.Content.ReadAsStringAsync();
+
+                // 🔹 Caso o banco realmente não exista ou a requisição seja rejeitada
+                if (!response.IsSuccessStatusCode)
+                {
+                    // 🔍 Tenta interpretar o retorno de erro da API
+                    string erroLower = result.ToLower();
+
+                    if (erroLower.Contains("database not found") ||
+                        erroLower.Contains("no such database") ||
+                        erroLower.Contains("not exist") ||
+                        erroLower.Contains("unknown database") ||
+                        erroLower.Contains("invalid database"))
                     {
-                        BancoEmpresa = arr[0]?["NomeBanco"]?.ToString();
+                        throw new Exception("❌ Banco de dados não encontrado.");
+                    }
+                    else
+                    {
+                        throw new Exception($"❌ Erro ao consultar a nuvem. Status HTTP: {response.StatusCode}. Resposta: {result}");
                     }
                 }
-                catch (Exception ex)
-                {
-                    throw new Exception($"Erro ao interpretar resposta da nuvem: {ex.Message}\nRetorno: {result}");
-                }
 
-                if (string.IsNullOrEmpty(BancoEmpresa))
-                    throw new Exception("❌ Usuário ou senha inválido, ou usuário inativo.");
 
+                var data = JObject.Parse(result);
+
+                // 🔹 Nenhum usuário encontrado
+                if (data["data"] is not JArray arr || arr.Count == 0)
+                    throw new Exception(" Usuário ou senha incorretos.");
+
+                string nomeUsuario = arr[0]?["Nome"]?.ToString();
+                string ativoStr = arr[0]?["Ativo"]?.ToString();
+
+                // 🔹 Verifica se o usuário está ativo
+                if (ativoStr != "1")
+                    throw new Exception(" Usuário bloqueado.");
+
+                // 🔹 Tudo certo
+                BancoEmpresa = nomeBanco;
                 Logado = true;
-                return BancoEmpresa;
+
+                return $"✅ Login realizado com sucesso. Usuário: {nomeUsuario}";
             }
         }
+
 
         // 🔹 Executa SQL dentro do banco da empresa logada
         public async Task<string> ExecutarSqlEmpresaAsync(string sql)
         {
-            if (!Logado || string.IsNullOrEmpty(BancoEmpresa))
-                throw new Exception("É necessário fazer login antes de acessar o banco da empresa.");
+            string banco = SessaoNuvem.BancoAtual;
+
+            if (string.IsNullOrEmpty(banco))
+                throw new Exception("Nenhum banco ativo. Faça login antes de continuar.");
 
             using (var client = new HttpClient())
             {
@@ -135,7 +165,7 @@ namespace APP_SITE_ACADEMIA.Classes
 
                 var body = new
                 {
-                    database = BancoEmpresa,
+                    database = banco,
                     sql
                 };
 
@@ -149,5 +179,6 @@ namespace APP_SITE_ACADEMIA.Classes
                 return result;
             }
         }
+
     }
 }

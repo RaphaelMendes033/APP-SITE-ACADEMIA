@@ -1,7 +1,7 @@
 ﻿@page
 @model APP_SITE_ACADEMIA.Pages.Shared.Login.IndexModel
 @{
-    ViewData["Title"] = "Login do Colaborador";
+    ViewData["Title"] = "Bem Vindo - SGA - Academia";
 }
 
 <div class="d-flex justify-content-center align-items-center vh-100" style="background: linear-gradient(135deg, #1e3c72, #2a5298);">
@@ -12,6 +12,11 @@
         </div>
 
         <form method="post" id="loginForm">
+            <div class="form-floating mb-3">
+                <input type="text" asp-for="NomeBanco" class="form-control rounded-4" id="nomeBanco" placeholder="Nome do Banco" required />
+                <label for="nomeBanco">Nome do Banco</label>
+            </div>
+
             <div class="form-floating mb-3">
                 <input type="text" asp-for="Documento" class="form-control rounded-4" id="documento" placeholder="CPF" required />
                 <label for="documento">CPF</label>

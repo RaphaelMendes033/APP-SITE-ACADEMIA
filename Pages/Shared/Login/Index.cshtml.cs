@@ -1,14 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using APP_SITE_ACADEMIA.Classes;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using APP_SITE_ACADEMIA.Classes;
 using System;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using static APP_SITE_ACADEMIA.Classes.clsBancoNuvem;
 
 namespace APP_SITE_ACADEMIA.Pages.Shared.Login
 {
     public class IndexModel : PageModel
     {
+        [BindProperty] public string NomeBanco { get; set; }
         [BindProperty] public string Documento { get; set; }
         [BindProperty] public string Senha { get; set; }
         public string Mensagem { get; set; }
@@ -17,43 +19,39 @@ namespace APP_SITE_ACADEMIA.Pages.Shared.Login
         {
             try
             {
-                // 🔹 Validação inicial
-                if (string.IsNullOrWhiteSpace(Documento) || string.IsNullOrWhiteSpace(Senha))
+                if (string.IsNullOrWhiteSpace(NomeBanco) ||
+                    string.IsNullOrWhiteSpace(Documento) ||
+                    string.IsNullOrWhiteSpace(Senha))
                 {
-                    Mensagem = "❌ Informe o documento e a senha.";
+                    Mensagem = "❌ Preencha todos os campos.";
                     return Page();
                 }
 
                 var bancoNuvem = new clsBancoNuvem();
-                string resultado = await bancoNuvem.ObterApiKeyDaNuvemAsync(Documento, Senha);
+                string resultado = await bancoNuvem.FazerLoginAsync(NomeBanco, Documento, Senha);
 
-                if (resultado.Contains("Usuário não encontrado"))
+                if (!bancoNuvem.Logado)
                 {
-                    Mensagem = "❌ Usuário não encontrado.";
-                    return Page();
-                }
-                else if (resultado.Contains("Usuário bloqueado"))
-                {
-                    Mensagem = "❌ Usuário bloqueado.";
-                    return Page();
-                }
-                else if (resultado.Contains("Erro ao consultar"))
-                {
-                    Mensagem = "❌ Erro ao consultar a nuvem.";
+                    Mensagem = "❌ Falha ao realizar login.";
                     return Page();
                 }
 
-                // ✅ Login bem-sucedido → grava sessão
+                // ✅ Guarda sessão ASP.NET
                 HttpContext.Session.SetString("Logado", "true");
                 HttpContext.Session.SetString("Documento", Documento);
-                HttpContext.Session.SetString("ApiKey", resultado);
+                HttpContext.Session.SetString("BancoEmpresa", NomeBanco);
 
-                // ✅ Redireciona corretamente para Home
+                // ✅ Guarda também na classe estática global
+                SessaoNuvem.BancoAtual = NomeBanco;
+                SessaoNuvem.DocumentoUsuario = Documento;
+
+
+                // ✅ Redireciona para Home
                 return RedirectToPage("/Shared/Home/Index");
             }
             catch (Exception ex)
             {
-                Mensagem = $"❌ Erro ao tentar realizar login: {ex.Message}";
+                Mensagem = $"❌ Erro de login:  {ex.Message}";
                 return Page();
             }
         }
