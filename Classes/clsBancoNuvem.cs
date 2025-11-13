@@ -111,15 +111,16 @@ namespace APP_SITE_ACADEMIA.Classes
                 if (string.IsNullOrWhiteSpace(numeroBanco))
                     return (false, null, null, "❌ Número do banco não informado.");
 
-                // 🔹 SQL que roda no banco SGA fixo
                 string sql = $@"
-            SELECT Nome AS NomeEmpresa, ApiKey, Bloqueado 
-            FROM Empresas 
+            SELECT 
+                Nome AS NomeEmpresa,
+                ApiKey,
+                Bloqueado
+            FROM Empresas
             WHERE NumeroBanco = '{numeroBanco}'";
 
                 using (var client = new HttpClient())
                 {
-                    // 🔹 Usa o APIKEY e o banco SGA fixos (já definidos na classe)
                     client.DefaultRequestHeaders.Authorization =
                         new AuthenticationHeaderValue("Bearer", apiKeySGA);
 
@@ -127,7 +128,7 @@ namespace APP_SITE_ACADEMIA.Classes
                     {
                         data = new
                         {
-                            database = "SGA",
+                            database = bancoSGA,
                             sql
                         }
                     };
@@ -135,22 +136,22 @@ namespace APP_SITE_ACADEMIA.Classes
                     var json = JsonConvert.SerializeObject(body);
                     var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                    // 🔹 Envia a requisição
-                    var response = await client.PostAsync($"{apiUrl}/sql", content);
+                    var response = await client.PostAsync(apiUrl, content);
                     var resposta = await response.Content.ReadAsStringAsync();
 
+                    // 🔹 Se falhar no nível HTTP
                     if (!response.IsSuccessStatusCode)
-                        return (false, null, null, $"❌ Erro ao consultar a nuvem. Status HTTP: {response.StatusCode}");
+                        return (false, null, null,
+                            $"❌ Erro ao consultar a nuvem (HTTP {response.StatusCode}). " +
+                            $"Verifique se o banco '{bancoSGA}' existe e se a tabela 'Empresas' está correta.\n\nResposta do servidor: {resposta}");
 
-                    // 🔹 Converte o JSON de resposta
+                    // 🔹 Tenta converter a resposta JSON
                     var resultado = JObject.Parse(resposta);
 
-                    // 🔸 Garante que há dados
                     var rows = resultado["data"]?["rows"];
                     if (rows == null || !rows.HasValues)
                         return (false, null, null, "❌ Empresa não encontrada no banco SGA.");
 
-                    // 🔹 Lê os dados da primeira linha retornada
                     string nomeEmpresa = rows[0]["NomeEmpresa"]?.ToString();
                     string apiKeyEmpresa = rows[0]["ApiKey"]?.ToString();
                     bool bloqueado = rows[0]["Bloqueado"]?.ToObject<bool>() ?? false;
@@ -169,7 +170,6 @@ namespace APP_SITE_ACADEMIA.Classes
                 return (false, null, null, $"❌ Erro ao buscar empresa: {ex.Message}");
             }
         }
-
 
 
 
@@ -267,5 +267,85 @@ namespace APP_SITE_ACADEMIA.Classes
                 return result;
             }
         }
+
+
+
+        public async Task<string> ConsultarEmpresasAsync()
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    // 🔹 Configurar o endpoint e autenticação
+                    client.BaseAddress = new Uri("https://api.restdb.io/rest/");
+                    client.DefaultRequestHeaders.Add("x-apikey", "AdB2Xn0vJvb26T5Xx1C8Dx");
+                    client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+                    // 🔹 Endpoint exato da sua coleção (tabela) no banco SGA
+                    var url = "empresas?q={}&h=false&metafields=false";
+
+                    // 🔹 Envia a requisição GET
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    // 🔹 Trata o retorno
+                    string result = await response.Content.ReadAsStringAsync();
+
+                    if (!response.IsSuccessStatusCode)
+                        throw new Exception($"❌ Erro ao consultar a nuvem. Status HTTP: {response.StatusCode}\n\nResposta: {result}");
+
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                return $"❌ Erro ao consultar a nuvem: {ex.Message}";
+            }
+        }
+
+
+
+
+        public async Task<(bool Sucesso, string Retorno)> ConsultarEmpresasWebLiteAsync()
+        {
+            try
+            {
+                string apiUrl = "https://api.weblite.com.br/v2/weblite/sql/sql"; // ✅ confirme a URL base exata do seu servidor
+                string apiKeySGA = "SUA_API_KEY_DO_BANCO_SGA"; // ✅ coloque a apikey do banco SGA aqui
+
+                string sql = "SELECT * FROM Empresas";
+
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue("Bearer", apiKeySGA);
+
+                    var body = new
+                    {
+                        data = new
+                        {
+                            database = "SGA",
+                            sql
+                        }
+                    };
+
+                    var json = JsonConvert.SerializeObject(body);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                    var response = await client.PostAsync(apiUrl, content);
+                    var resposta = await response.Content.ReadAsStringAsync();
+
+                    if (!response.IsSuccessStatusCode)
+                        return (false, $"❌ Erro ao consultar a nuvem (HTTP {response.StatusCode}). Resposta: {resposta}");
+
+                    return (true, resposta);
+                }
+            }
+            catch (Exception ex)
+            {
+                return (false, $"❌ Erro ao consultar a nuvem: {ex.Message}");
+            }
+        }
+
+
     }
 }

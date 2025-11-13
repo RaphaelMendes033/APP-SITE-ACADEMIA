@@ -3,6 +3,9 @@
 @{
     ViewData["Title"] = "Bem Vindo - SGA - Academia";
 }
+<h2>Resultado da Consulta</h2>
+
+<pre>@Model.ResultadoConsulta</pre>
 
 <div class="d-flex justify-content-center align-items-center vh-100" style="background: linear-gradient(135deg, #1e3c72, #2a5298);">
     <div class="card shadow-lg border-0 p-4" style="width: 400px; border-radius: 20px;">
@@ -48,33 +51,53 @@
     <script>
         const campoBanco = document.getElementById('nomeBanco');
         const lblEmpresa = document.getElementById('lblEmpresa');
+        const campoDocumento = document.getElementById('documento');
+        const campoSenha = document.getElementById('senha');
+        const btnEntrar = document.getElementById('btnEntrar');
+
+        // Inicialmente desabilita campos
+        campoDocumento.disabled = true;
+        campoSenha.disabled = true;
+        btnEntrar.disabled = true;
 
         campoBanco.addEventListener('blur', async function () {
-            const numeroBanco = this.value.trim();
-            if (!numeroBanco) return;
+            const nomeBanco = this.value.trim();
+            if (!nomeBanco) return;
 
             lblEmpresa.style.display = "none";
             lblEmpresa.textContent = "";
+            lblEmpresa.classList.remove("text-danger", "text-success");
+
+            campoDocumento.disabled = true;
+            campoSenha.disabled = true;
+            btnEntrar.disabled = true;
 
             try {
-                const resp = await fetch(`?handler=BuscarEmpresa&numeroBanco=${encodeURIComponent(numeroBanco)}`);
+                const resp = await fetch(`?handler=BuscarEmpresa&nomeBanco=${encodeURIComponent(nomeBanco)}`);
                 const data = await resp.json();
 
                 if (data.sucesso) {
                     lblEmpresa.textContent = `✅ Empresa encontrada: ${data.nome}`;
+                    lblEmpresa.classList.add("text-success");
                     lblEmpresa.style.display = "block";
+
+                    // ✅ Habilita os campos
+                    campoDocumento.disabled = false;
+                    campoSenha.disabled = false;
+                    btnEntrar.disabled = false;
                 } else {
                     lblEmpresa.textContent = data.erro || "❌ Empresa não encontrada.";
-                    lblEmpresa.classList.replace("text-success", "text-danger");
+                    lblEmpresa.classList.add("text-danger");
                     lblEmpresa.style.display = "block";
                 }
             } catch {
                 lblEmpresa.textContent = "❌ Erro de conexão.";
-                lblEmpresa.classList.replace("text-success", "text-danger");
+                lblEmpresa.classList.add("text-danger");
                 lblEmpresa.style.display = "block";
             }
         });
     </script>
 }
+
 
 
