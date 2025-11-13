@@ -1,9 +1,6 @@
 ﻿using APP_SITE_ACADEMIA.Classes;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System;
-using System.Threading.Tasks;
 using static APP_SITE_ACADEMIA.Classes.clsBancoNuvem;
 
 namespace APP_SITE_ACADEMIA.Pages.Shared.Login
@@ -13,18 +10,22 @@ namespace APP_SITE_ACADEMIA.Pages.Shared.Login
         [BindProperty] public string NomeBanco { get; set; }
         [BindProperty] public string Documento { get; set; }
         [BindProperty] public string Senha { get; set; }
+
         public string Mensagem { get; set; }
-
-
         public string ResultadoConsulta { get; set; }
+
+        public string MensagemStatusSGA { get; set; } = "";
+        public bool ConexaoOk { get; set; } = false;
+
 
         public async Task OnGetAsync()
         {
             var banco = new clsBancoNuvem();
-            var (sucesso, retorno) = await banco.ConsultarEmpresasWebLiteAsync();
-            ResultadoConsulta = retorno;
-        }
+            var (ok, msg) = await banco.VerificarConexaoSGAAsync();
 
+            ConexaoOk = ok;
+            MensagemStatusSGA = msg;
+        }
 
 
         // 🔹 Evento chamado via AJAX (quando o usuário sai do campo NomeBanco)
@@ -38,6 +39,10 @@ namespace APP_SITE_ACADEMIA.Pages.Shared.Login
             else
                 return new JsonResult(new { sucesso = false, erro = resultado.Erro });
         }
+
+
+
+
 
         // 🔹 Login principal (botão "Entrar")
         public async Task<IActionResult> OnPostAsync()
