@@ -158,15 +158,14 @@ namespace APP_SITE_ACADEMIA.Classes
                 if (string.IsNullOrWhiteSpace(numeroBanco))
                     return (false, null, null, "❌ Número do banco não informado.");
 
-                // 1️⃣ Buscar no banco SGA a ApiKey e informações da empresa
+                // 1️⃣ Buscar a ApiKey da empresa no banco SGA
                 string sqlSGA = $@"
             SELECT 
                 Nome AS NomeEmpresa,
                 ApiKey,
                 Ativo
             FROM Empresas
-            WHERE NumeroBanco = '{numeroBanco}'
-            LIMIT 1;";
+            WHERE NumeroBanco = '{numeroBanco}'";
 
                 using (var clientSGA = new HttpClient())
                 {
@@ -175,28 +174,31 @@ namespace APP_SITE_ACADEMIA.Classes
 
                     var bodySGA = new
                     {
-                        database = bancoSGA,
-                        sql = sqlSGA
+                        data = new
+                        {
+                            database = bancoSGA,
+                            sql = sqlSGA
+                        }
                     };
 
                     var jsonSGA = JsonConvert.SerializeObject(bodySGA);
                     var contentSGA = new StringContent(jsonSGA, Encoding.UTF8, "application/json");
+
                     var responseSGA = await clientSGA.PostAsync(apiUrl, contentSGA);
                     var respostaSGA = await responseSGA.Content.ReadAsStringAsync();
 
                     if (!responseSGA.IsSuccessStatusCode)
                         return (false, null, null, $"❌ Erro ao consultar o SGA (HTTP {responseSGA.StatusCode}). {respostaSGA}");
 
-                    // ✅ Interpreta o formato retornado pelo WebLite (usa "data")
                     var resultadoSGA = JObject.Parse(respostaSGA);
-                    var dataSGA = resultadoSGA["data"] as JArray;
+                    var rowsSGA = resultadoSGA["data"]?["rows"] as JArray;
 
-                    if (dataSGA == null || dataSGA.Count == 0)
+                    if (rowsSGA == null || rowsSGA.Count == 0)
                         return (false, null, null, "❌ Empresa não encontrada no SGA.");
 
-                    string nomeEmpresaSGA = dataSGA[0]?[0]?.ToString();
-                    string apiKeyEmpresa = dataSGA[0]?[1]?.ToString();
-                    bool ativo = dataSGA[0]?[2]?.ToObject<int>() == 1;
+                    string nomeEmpresaSGA = rowsSGA[0]["NomeEmpresa"]?.ToString();
+                    string apiKeyEmpresa = rowsSGA[0]["ApiKey"]?.ToString();
+                    bool ativo = rowsSGA[0]["Ativo"]?.ToObject<int>() == 1;
 
                     if (!ativo)
                         return (false, nomeEmpresaSGA, apiKeyEmpresa, "❌ Empresa inativa no SGA.");
@@ -204,7 +206,7 @@ namespace APP_SITE_ACADEMIA.Classes
                     if (string.IsNullOrEmpty(apiKeyEmpresa))
                         return (false, nomeEmpresaSGA, null, "❌ Empresa sem ApiKey configurada.");
 
-                    // 2️⃣ Agora usa a ApiKey da empresa para buscar os dados do banco dela
+                    // 2️⃣ Usar a ApiKey da empresa para acessar o banco dela e obter o nome real
                     using (var clientEmpresa = new HttpClient())
                     {
                         clientEmpresa.DefaultRequestHeaders.Authorization =
@@ -214,12 +216,16 @@ namespace APP_SITE_ACADEMIA.Classes
 
                         var bodyEmpresa = new
                         {
-                            database = numeroBanco,
-                            sql = sqlEmpresa
+                            data = new
+                            {
+                                database = numeroBanco,
+                                sql = sqlEmpresa
+                            }
                         };
 
                         var jsonEmpresa = JsonConvert.SerializeObject(bodyEmpresa);
                         var contentEmpresa = new StringContent(jsonEmpresa, Encoding.UTF8, "application/json");
+
                         var responseEmpresa = await clientEmpresa.PostAsync(apiUrl, contentEmpresa);
                         var respostaEmpresa = await responseEmpresa.Content.ReadAsStringAsync();
 
@@ -227,12 +233,12 @@ namespace APP_SITE_ACADEMIA.Classes
                             return (false, nomeEmpresaSGA, apiKeyEmpresa, $"❌ Erro ao consultar banco da empresa (HTTP {responseEmpresa.StatusCode}). {respostaEmpresa}");
 
                         var resultadoEmpresa = JObject.Parse(respostaEmpresa);
-                        var dataEmpresa = resultadoEmpresa["data"] as JArray;
+                        var rowsEmpresa = resultadoEmpresa["data"]?["rows"] as JArray;
 
-                        if (dataEmpresa == null || dataEmpresa.Count == 0)
+                        if (rowsEmpresa == null || rowsEmpresa.Count == 0)
                             return (false, nomeEmpresaSGA, apiKeyEmpresa, "⚠️ Empresa encontrada no SGA, mas não no banco da empresa.");
 
-                        string nomeFinal = dataEmpresa[0]?[0]?.ToString() ?? nomeEmpresaSGA;
+                        string nomeFinal = rowsEmpresa[0]["NomeEmpresa"]?.ToString() ?? nomeEmpresaSGA;
 
                         return (true, nomeFinal, apiKeyEmpresa, null);
                     }
