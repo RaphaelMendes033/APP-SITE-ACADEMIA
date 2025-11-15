@@ -172,13 +172,20 @@ namespace APP_SITE_ACADEMIA.Classes
                     clientSGA.DefaultRequestHeaders.Authorization =
                         new AuthenticationHeaderValue("Bearer", apiKeySGA);
 
+                    //var bodySGA = new
+                    //{
+                    //    data = new
+                    //    {
+                    //        database = bancoSGA,
+                    //        sql = sqlSGA
+                    //    }
+                    //};
+
+
                     var bodySGA = new
                     {
-                        data = new
-                        {
-                            database = bancoSGA,
-                            sql = sqlSGA
-                        }
+                        database = bancoSGA,
+                        sql = sqlSGA
                     };
 
                     var jsonSGA = JsonConvert.SerializeObject(bodySGA);
@@ -191,14 +198,56 @@ namespace APP_SITE_ACADEMIA.Classes
                         return (false, null, null, $"❌ Erro ao consultar o SGA (HTTP {responseSGA.StatusCode}). {respostaSGA}");
 
                     var resultadoSGA = JObject.Parse(respostaSGA);
-                    var rowsSGA = resultadoSGA["data"]?["rows"] as JArray;
+                    //var rowsSGA = resultadoSGA["data"]?["rows"] as JArray;
+
+                    //if (rowsSGA == null || rowsSGA.Count == 0)
+                    //    return (false, null, null, "❌ Empresa não encontrada no SGA.");
+
+                    //string nomeEmpresaSGA = rowsSGA[0]["NomeEmpresa"]?.ToString();
+                    //string apiKeyEmpresa = rowsSGA[0]["ApiKey"]?.ToString();
+                    //bool ativo = rowsSGA[0]["Ativo"]?.ToObject<int>() == 1;
+
+
+
+                    //var rowsSGA = resultadoSGA["data"] as JArray;
+
+                    //if (rowsSGA == null || rowsSGA.Count == 0)
+                    //    return (false, null, null, "❌ Empresa não encontrada no SGA.");
+
+                    //string nomeEmpresaSGA = rowsSGA[0][0]?.ToString();
+                    //string apiKeyEmpresa = rowsSGA[0][1]?.ToString();
+                    //bool ativo = rowsSGA[0][2]?.ToObject<int>() == 1;
+
+
+
+
+
+
+
+
+
+                    var rowsSGA = resultadoSGA["data"] as JArray;
 
                     if (rowsSGA == null || rowsSGA.Count == 0)
                         return (false, null, null, "❌ Empresa não encontrada no SGA.");
 
-                    string nomeEmpresaSGA = rowsSGA[0]["NomeEmpresa"]?.ToString();
-                    string apiKeyEmpresa = rowsSGA[0]["ApiKey"]?.ToString();
-                    bool ativo = rowsSGA[0]["Ativo"]?.ToObject<int>() == 1;
+                    var row = rowsSGA[0] as JObject;
+                    if (row == null)
+                        return (false, null, null, "❌ Formato inesperado retornado pelo WebLite.");
+
+                    string nomeEmpresaSGA = row["NomeEmpresa"]?.ToString();
+                    string apiKeyEmpresa = row["ApiKey"]?.ToString();
+                    bool ativo = row["Ativo"]?.ToObject<int>() == 1;
+
+
+
+
+
+
+
+
+
+
 
                     if (!ativo)
                         return (false, nomeEmpresaSGA, apiKeyEmpresa, "❌ Empresa inativa no SGA.");
@@ -207,6 +256,31 @@ namespace APP_SITE_ACADEMIA.Classes
                         return (false, nomeEmpresaSGA, null, "❌ Empresa sem ApiKey configurada.");
 
                     // 2️⃣ Usar a ApiKey da empresa para acessar o banco dela e obter o nome real
+                    //using (var clientEmpresa = new HttpClient())
+                    //{
+                    //    clientEmpresa.DefaultRequestHeaders.Authorization =
+                    //        new AuthenticationHeaderValue("Bearer", apiKeyEmpresa);
+
+                    //    string sqlEmpresa = "SELECT Nome AS NomeEmpresa FROM Empresas LIMIT 1;";
+
+                    //    var bodyEmpresa = new
+                    //    {
+                    //        data = new
+                    //        {
+                    //            database = numeroBanco,
+                    //            sql = sqlEmpresa
+                    //        }
+                    //    };
+
+                    //    var jsonEmpresa = JsonConvert.SerializeObject(bodyEmpresa);
+                    //    var contentEmpresa = new StringContent(jsonEmpresa, Encoding.UTF8, "application/json");
+
+                    //    var responseEmpresa = await clientEmpresa.PostAsync(apiUrl, contentEmpresa);
+                    //    var respostaEmpresa = await responseEmpresa.Content.ReadAsStringAsync();
+
+
+                    dsfsdfsdf;
+                    // pq aqui faz o select de novo ? se la em cima ja foi feito ?
                     using (var clientEmpresa = new HttpClient())
                     {
                         clientEmpresa.DefaultRequestHeaders.Authorization =
@@ -216,11 +290,8 @@ namespace APP_SITE_ACADEMIA.Classes
 
                         var bodyEmpresa = new
                         {
-                            data = new
-                            {
-                                database = numeroBanco,
-                                sql = sqlEmpresa
-                            }
+                            database = numeroBanco,
+                            sql = sqlEmpresa
                         };
 
                         var jsonEmpresa = JsonConvert.SerializeObject(bodyEmpresa);
@@ -228,6 +299,16 @@ namespace APP_SITE_ACADEMIA.Classes
 
                         var responseEmpresa = await clientEmpresa.PostAsync(apiUrl, contentEmpresa);
                         var respostaEmpresa = await responseEmpresa.Content.ReadAsStringAsync();
+
+
+
+
+
+
+
+
+
+
 
                         if (!responseEmpresa.IsSuccessStatusCode)
                             return (false, nomeEmpresaSGA, apiKeyEmpresa, $"❌ Erro ao consultar banco da empresa (HTTP {responseEmpresa.StatusCode}). {respostaEmpresa}");
