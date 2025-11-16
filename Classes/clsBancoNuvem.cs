@@ -80,9 +80,15 @@ namespace APP_SITE_ACADEMIA.Classes
                 if (data["data"] is not JArray arr || arr.Count == 0)
                     throw new Exception($"❌ Empresa com número '{numeroBanco}' não encontrada no banco SGA.");
 
-                string nomeEmpresa = arr[0]?[0]?.ToString();
-                string apiKeyEmpresa = arr[0]?[1]?.ToString();
-                bool bloqueado = arr[0]?[2]?.ToString() == "1";
+                //string nomeEmpresa = arr[0]?[0]?.ToString();
+                //string apiKeyEmpresa = arr[0]?[1]?.ToString();
+                //bool bloqueado = arr[0]?[2]?.ToString() == "1";
+
+                var row = arr[0] as JObject;
+
+                string nomeEmpresa = row["Nome"]?.ToString();
+                string apiKeyEmpresa = row["ApiKey"]?.ToString();
+                bool bloqueado = row["Bloqueado"]?.ToObject<int>() == 1;
 
                 if (string.IsNullOrWhiteSpace(apiKeyEmpresa))
                     throw new Exception("❌ Empresa encontrada, mas sem APIKEY cadastrada no SGA.");
@@ -197,7 +203,7 @@ namespace APP_SITE_ACADEMIA.Classes
                     if (!responseSGA.IsSuccessStatusCode)
                         return (false, null, null, $"❌ Erro ao consultar o SGA (HTTP {responseSGA.StatusCode}). {respostaSGA}");
 
-                    var resultadoSGA = JObject.Parse(respostaSGA);
+              //      var resultadoSGA = JObject.Parse(respostaSGA);
                     //var rowsSGA = resultadoSGA["data"]?["rows"] as JArray;
 
                     //if (rowsSGA == null || rowsSGA.Count == 0)
@@ -226,18 +232,64 @@ namespace APP_SITE_ACADEMIA.Classes
 
 
 
-                    var rowsSGA = resultadoSGA["data"] as JArray;
+                    //var rowsSGA = resultadoSGA["data"] as JArray;
 
-                    if (rowsSGA == null || rowsSGA.Count == 0)
+                    //if (rowsSGA == null || rowsSGA.Count == 0)
+                    //    return (false, null, null, "❌ Empresa não encontrada no SGA.");
+
+                    //var row = rowsSGA[0] as JObject;
+                    //if (row == null)
+                    //    return (false, null, null, "❌ Formato inesperado retornado pelo WebLite.");
+
+                    //string nomeEmpresaSGA = row["NomeEmpresa"]?.ToString();
+                    //string apiKeyEmpresa = row["ApiKey"]?.ToString();
+                    //bool ativo = row["Ativo"]?.ToObject<int>() == 1;
+
+
+                    var resultadoSGA = JObject.Parse(respostaSGA);
+
+                    // "data" é um array de objetos
+                    var dataArray = resultadoSGA["data"] as JArray;
+
+                    if (dataArray == null || dataArray.Count == 0)
                         return (false, null, null, "❌ Empresa não encontrada no SGA.");
 
-                    var row = rowsSGA[0] as JObject;
-                    if (row == null)
-                        return (false, null, null, "❌ Formato inesperado retornado pelo WebLite.");
+                    // A primeira linha é um objeto
+                    var row = dataArray[0] as JObject;
 
+                    if (row == null)
+                        return (false, null, null, "❌ Formato inesperado retornado pelo servidor.");
+
+                    // Agora extraímos normalmente
                     string nomeEmpresaSGA = row["NomeEmpresa"]?.ToString();
                     string apiKeyEmpresa = row["ApiKey"]?.ToString();
                     bool ativo = row["Ativo"]?.ToObject<int>() == 1;
+
+                    if (!ativo)
+                        return (false, nomeEmpresaSGA, apiKeyEmpresa, "❌ Empresa inativa no SGA.");
+
+                    if (string.IsNullOrEmpty(apiKeyEmpresa))
+                        return (false, nomeEmpresaSGA, null, "❌ Empresa sem ApiKey configurada.");
+
+                    return (true, nomeEmpresaSGA, apiKeyEmpresa, null);
+
+
+
+
+
+
+
+                    //var rows = resultadoSGA["data"] as JArray;
+                    //var cols = resultadoSGA["columns"] as JArray;
+
+                    //if (rows == null || rows.Count == 0)
+                    //    return (false, null, null, "❌ Empresa não encontrada no SGA.");
+
+                    //var row = rows[0] as JArray;
+
+                    //string nomeEmpresaSGA = row[cols.IndexOf("NomeEmpresa")]?.ToString();
+                    //string apiKeyEmpresa = row[cols.IndexOf("ApiKey")]?.ToString();
+                    //bool ativo = row[cols.IndexOf("Ativo")]?.ToObject<int>() == 1;
 
 
 
@@ -279,28 +331,26 @@ namespace APP_SITE_ACADEMIA.Classes
                     //    var respostaEmpresa = await responseEmpresa.Content.ReadAsStringAsync();
 
 
-                    dsfsdfsdf;
+                 //   dsfsdfsdf;
                     // pq aqui faz o select de novo ? se la em cima ja foi feito ?
-                    using (var clientEmpresa = new HttpClient())
-                    {
-                        clientEmpresa.DefaultRequestHeaders.Authorization =
-                            new AuthenticationHeaderValue("Bearer", apiKeyEmpresa);
+                    //using (var clientEmpresa = new HttpClient())
+                    //{
+                    //    clientEmpresa.DefaultRequestHeaders.Authorization =
+                    //        new AuthenticationHeaderValue("Bearer", apiKeyEmpresa);
 
-                        string sqlEmpresa = "SELECT Nome AS NomeEmpresa FROM Empresas LIMIT 1;";
+                    //    string sqlEmpresa = "SELECT Nome AS NomeEmpresa FROM Empresas LIMIT 1;";
 
-                        var bodyEmpresa = new
-                        {
-                            database = numeroBanco,
-                            sql = sqlEmpresa
-                        };
+                    //    var bodyEmpresa = new
+                    //    {
+                    //        database = numeroBanco,
+                    //        sql = sqlEmpresa
+                    //    };
 
-                        var jsonEmpresa = JsonConvert.SerializeObject(bodyEmpresa);
-                        var contentEmpresa = new StringContent(jsonEmpresa, Encoding.UTF8, "application/json");
+                    //    var jsonEmpresa = JsonConvert.SerializeObject(bodyEmpresa);
+                    //    var contentEmpresa = new StringContent(jsonEmpresa, Encoding.UTF8, "application/json");
 
-                        var responseEmpresa = await clientEmpresa.PostAsync(apiUrl, contentEmpresa);
-                        var respostaEmpresa = await responseEmpresa.Content.ReadAsStringAsync();
-
-
+                    //    var responseEmpresa = await clientEmpresa.PostAsync(apiUrl, contentEmpresa);
+                    //    var respostaEmpresa = await responseEmpresa.Content.ReadAsStringAsync();
 
 
 
@@ -310,20 +360,23 @@ namespace APP_SITE_ACADEMIA.Classes
 
 
 
-                        if (!responseEmpresa.IsSuccessStatusCode)
-                            return (false, nomeEmpresaSGA, apiKeyEmpresa, $"❌ Erro ao consultar banco da empresa (HTTP {responseEmpresa.StatusCode}). {respostaEmpresa}");
 
-                        var resultadoEmpresa = JObject.Parse(respostaEmpresa);
-                        var rowsEmpresa = resultadoEmpresa["data"]?["rows"] as JArray;
 
-                        if (rowsEmpresa == null || rowsEmpresa.Count == 0)
-                            return (false, nomeEmpresaSGA, apiKeyEmpresa, "⚠️ Empresa encontrada no SGA, mas não no banco da empresa.");
+                    //    if (!responseEmpresa.IsSuccessStatusCode)
+                    //        return (false, nomeEmpresaSGA, apiKeyEmpresa, $"❌ Erro ao consultar banco da empresa (HTTP {responseEmpresa.StatusCode}). {respostaEmpresa}");
 
-                        string nomeFinal = rowsEmpresa[0]["NomeEmpresa"]?.ToString() ?? nomeEmpresaSGA;
+                    //    var resultadoEmpresa = JObject.Parse(respostaEmpresa);
+                    //    var rowsEmpresa = resultadoEmpresa["data"]?["rows"] as JArray;
 
-                        return (true, nomeFinal, apiKeyEmpresa, null);
+                    //    if (rowsEmpresa == null || rowsEmpresa.Count == 0)
+                    //        return (false, nomeEmpresaSGA, apiKeyEmpresa, "⚠️ Empresa encontrada no SGA, mas não no banco da empresa.");
+
+                    //     string nomeFinal = rowsEmpresa[0]["NomeEmpresa"]?.ToString() ?? nomeEmpresaSGA;
+                    string nomeFinal = nomeEmpresaSGA;
+
+                    return (true, nomeFinal, apiKeyEmpresa, null);
                     }
-                }
+          //      }
             }
             catch (Exception ex)
             {
@@ -351,59 +404,196 @@ namespace APP_SITE_ACADEMIA.Classes
 
             using (var client = CriarHttpClient(ApiKeyEmpresa))
             {
-                string sql = $@"
-                    SELECT Nome, Ativo
-                    FROM Usuarios
-                    WHERE Documento = '{documento}'
-                    AND Senha = '{senha}'
-                    LIMIT 1;";
 
-                var body = new { database = nomeBanco, sql };
-                string json = JsonConvert.SerializeObject(body);
 
-                HttpResponseMessage response;
-                try
+
+
+
+
+                string sqlSGA = $@"
+    SELECT Nome, Ativo
+    FROM Usuarios
+    WHERE Documento = '{documento}'
+    AND Senha = '{senha}'
+    ;";
+
+                using (var clientSGA = new HttpClient())
                 {
-                    response = await client.PostAsync(apiUrl, new StringContent(json, Encoding.UTF8, "application/json"));
+                    clientSGA.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue("Bearer", apiKeySGA);
+
+                    //var bodySGA = new
+                    //{
+                    //    data = new
+                    //    {
+                    //        database = bancoSGA,
+                    //        sql = sqlSGA
+                    //    }
+                    //};
+
+
+                    var bodySGA = new
+                    {
+                        database = bancoSGA,
+                        sql = sqlSGA
+                    };
+
+                    var jsonSGA = JsonConvert.SerializeObject(bodySGA);
+                    var contentSGA = new StringContent(jsonSGA, Encoding.UTF8, "application/json");
+
+                    var responseSGA = await clientSGA.PostAsync(apiUrl, contentSGA);
+                    var respostaSGA = await responseSGA.Content.ReadAsStringAsync();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    string sql = $@"
+    SELECT Nome, Ativo
+    FROM Usuarios
+    WHERE Documento = '{documento}'
+    AND Senha = '{senha}'
+    ;";
+
+                    //var body = new
+                    //{
+                    //    data = new
+                    //    {
+                    //        database = nomeBanco,
+                    //        sql = sql
+                    //    }
+                    //};
+
+
+                    var body = new
+                    {
+                        database = nomeBanco,
+                        sql = sql
+                    };
+                    //            var contentSGA = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+
+
+                    string json = JsonConvert.SerializeObject(body);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                    var response = await client.PostAsync(apiUrl, content);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    //          string sql = $@"
+                    //              SELECT Nome, Ativo
+                    //              FROM Usuarios
+                    //              WHERE Documento = '{documento}'
+                    //              AND Senha = '{senha}'
+                    //              LIMIT 1;";
+
+                    ////          var body = new { database = nomeBanco, sql };
+
+
+
+
+
+
+                    //          var body = new
+                    //          {
+                    //              data = new
+                    //              {
+                    //                  database = nomeBanco,
+                    //                  sql = sql
+                    //              }
+                    //          };
+
+
+
+
+
+
+
+
+
+
+                    //       string json = JsonConvert.SerializeObject(body);
+
+                    HttpResponseMessage responsee;
+                    try
+                    {
+                        responsee = await client.PostAsync(apiUrl, new StringContent(json, Encoding.UTF8, "application/json"));
+                    }
+                    catch (HttpRequestException)
+                    {
+                        throw new Exception("❌ Banco de dados não encontrado ou inacessível.");
+                    }
+
+                    string result = await responsee.Content.ReadAsStringAsync();
+
+                    if (!responsee.IsSuccessStatusCode)
+                    {
+                        string erroLower = result.ToLower();
+                        if (erroLower.Contains("database not found") ||
+                            erroLower.Contains("no such database") ||
+                            erroLower.Contains("not exist") ||
+                            erroLower.Contains("unknown database") ||
+                            erroLower.Contains("invalid database"))
+                            throw new Exception("❌ Banco de dados não encontrado.");
+                        else
+                            throw new Exception($"❌ Erro ao consultar a nuvem. Status HTTP: {responsee.StatusCode}. Resposta: {result}");
+                    }
+
+                    var data = JObject.Parse(result);
+                    if (data["data"] is not JArray arr || arr.Count == 0)
+                        throw new Exception("❌ Usuário ou senha incorretos.");
+
+                    string nomeUsuario = arr[0]?[0]?.ToString();
+                    string ativoStr = arr[0]?[1]?.ToString();
+
+                    if (ativoStr != "1")
+                        throw new Exception("🚫 Usuário bloqueado.");
+
+                    // 🔹 Login concluído
+                    Logado = true;
+                    SessaoNuvem.BancoAtual = nomeBanco;
+                    SessaoNuvem.DocumentoUsuario = documento;
+
+                    return $"✅ Login realizado com sucesso. Usuário: {nomeUsuario} | Empresa: {nomeEmpresa}";
                 }
-                catch (HttpRequestException)
-                {
-                    throw new Exception("❌ Banco de dados não encontrado ou inacessível.");
-                }
-
-                string result = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    string erroLower = result.ToLower();
-                    if (erroLower.Contains("database not found") ||
-                        erroLower.Contains("no such database") ||
-                        erroLower.Contains("not exist") ||
-                        erroLower.Contains("unknown database") ||
-                        erroLower.Contains("invalid database"))
-                        throw new Exception("❌ Banco de dados não encontrado.");
-                    else
-                        throw new Exception($"❌ Erro ao consultar a nuvem. Status HTTP: {response.StatusCode}. Resposta: {result}");
-                }
-
-                var data = JObject.Parse(result);
-                if (data["data"] is not JArray arr || arr.Count == 0)
-                    throw new Exception("❌ Usuário ou senha incorretos.");
-
-                string nomeUsuario = arr[0]?[0]?.ToString();
-                string ativoStr = arr[0]?[1]?.ToString();
-
-                if (ativoStr != "1")
-                    throw new Exception("🚫 Usuário bloqueado.");
-
-                // 🔹 Login concluído
-                Logado = true;
-                SessaoNuvem.BancoAtual = nomeBanco;
-                SessaoNuvem.DocumentoUsuario = documento;
-
-                return $"✅ Login realizado com sucesso. Usuário: {nomeUsuario} | Empresa: {nomeEmpresa}";
             }
         }
+        
 
         // 🔹 Executa SQL dentro do banco da empresa logada
         public async Task<string> ExecutarSqlEmpresaAsync(string sql)
