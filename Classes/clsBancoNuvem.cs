@@ -8,7 +8,7 @@ namespace APP_SITE_ACADEMIA.Classes
     public class clsBancoNuvem
     {
         // 🔹 Conexão fixa para o banco central SGA
-        private readonly string apiUrl = "https://cflv2aczvz.g2.sqlite.cloud/v2/weblite/sql";
+        private readonly string apiUrlSGA = "https://cflv2aczvz.g2.sqlite.cloud/v2/weblite/sql";                                          
         private readonly string apiKeySGA = "B4xLGomzkME8p9AliBrdGJHKGiqt2KEGHPrjDZZ51Os";
         private readonly string bancoSGA = "SGA";
 
@@ -64,7 +64,7 @@ namespace APP_SITE_ACADEMIA.Classes
                 HttpResponseMessage response;
                 try
                 {
-                    response = await client.PostAsync(apiUrl, new StringContent(json, Encoding.UTF8, "application/json"));
+                    response = await client.PostAsync(apiUrlSGA, new StringContent(json, Encoding.UTF8, "application/json"));
                 }
                 catch (HttpRequestException ex)
                 {
@@ -124,7 +124,7 @@ namespace APP_SITE_ACADEMIA.Classes
                     string json = JsonConvert.SerializeObject(body);
                     var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                    HttpResponseMessage response = await client.PostAsync(apiUrl, content);
+                    HttpResponseMessage response = await client.PostAsync(apiUrlSGA, content);
                     string result = await response.Content.ReadAsStringAsync();
 
                     if (!response.IsSuccessStatusCode)
@@ -197,7 +197,7 @@ namespace APP_SITE_ACADEMIA.Classes
                     var jsonSGA = JsonConvert.SerializeObject(bodySGA);
                     var contentSGA = new StringContent(jsonSGA, Encoding.UTF8, "application/json");
 
-                    var responseSGA = await clientSGA.PostAsync(apiUrl, contentSGA);
+                    var responseSGA = await clientSGA.PostAsync(apiUrlSGA, contentSGA);
                     var respostaSGA = await responseSGA.Content.ReadAsStringAsync();
 
                     if (!responseSGA.IsSuccessStatusCode)
@@ -388,12 +388,225 @@ namespace APP_SITE_ACADEMIA.Classes
 
 
         // 🔹 Etapa 2: faz login no banco da empresa usando ApiKey retornada
+        //    public async Task<string> FazerLoginAsync(string nomeBanco, string documento, string senha)
+        //    {
+        //        if (string.IsNullOrWhiteSpace(nomeBanco))
+        //            throw new Exception("❌ O nome do banco não foi informado.");
+
+        //        // Busca Nome + ApiKey da empresa no banco central (SGA)
+        //        var (nomeEmpresa, apiKeyEmpresa, bloqueado) = await ObterDadosEmpresaAsync(nomeBanco);
+
+        //        if (bloqueado)
+        //            throw new Exception($"🚫 A empresa '{nomeEmpresa}' está bloqueada.");
+
+        //        ApiKeyEmpresa = apiKeyEmpresa;
+        //        BancoEmpresa = nomeBanco;
+
+        //        using (var client = CriarHttpClient(ApiKeyEmpresa))
+        //        {
+
+
+
+
+
+
+        //            string sqlCliente = $@"
+        //SELECT Nome, Ativo
+        //FROM Usuarios
+        //WHERE Documento = '{documento}'
+        //AND Senha = '{senha}'
+        //;";
+
+        //            using (var clientCliente = new HttpClient())
+        //            {
+        //                clientCliente.DefaultRequestHeaders.Authorization =
+        //                    new AuthenticationHeaderValue("Bearer", apiKeyEmpresa);
+
+        //                //var bodySGA = new
+        //                //{
+        //                //    data = new
+        //                //    {
+        //                //        database = bancoSGA,
+        //                //        sql = sqlSGA
+        //                //    }
+        //                //};
+
+
+        //                var bodyCliente = new
+        //                {
+        //                    database = BancoEmpresa,
+        //                    sql = sqlCliente
+        //                };
+
+        //                var jsonCliente = JsonConvert.SerializeObject(bodyCliente);
+        //                var contentCliente = new StringContent(jsonCliente, Encoding.UTF8, "application/json");
+
+        //                var responseCliente = await clientCliente.PostAsync(apiUrl, contentCliente);
+        //                var respostaCliente = await responseCliente.Content.ReadAsStringAsync();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        //                string sql = $@"
+        //SELECT Nome, Ativo
+        //FROM Usuarios
+        //WHERE Documento = '{documento}'
+        //AND Senha = '{senha}'
+        //;";
+
+        //                //var body = new
+        //                //{
+        //                //    data = new
+        //                //    {
+        //                //        database = nomeBanco,
+        //                //        sql = sql
+        //                //    }
+        //                //};
+
+
+        //                var body = new
+        //                {
+        //                    database = nomeBanco,
+        //                    sql = sql
+        //                };
+        //                //            var contentSGA = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+
+
+        //                string json = JsonConvert.SerializeObject(body);
+        //                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        //                var response = await client.PostAsync(apiUrl, content);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        //                //          string sql = $@"
+        //                //              SELECT Nome, Ativo
+        //                //              FROM Usuarios
+        //                //              WHERE Documento = '{documento}'
+        //                //              AND Senha = '{senha}'
+        //                //              LIMIT 1;";
+
+        //                ////          var body = new { database = nomeBanco, sql };
+
+
+
+
+
+
+        //                //          var body = new
+        //                //          {
+        //                //              data = new
+        //                //              {
+        //                //                  database = nomeBanco,
+        //                //                  sql = sql
+        //                //              }
+        //                //          };
+
+
+
+
+
+
+
+
+
+
+        //                //       string json = JsonConvert.SerializeObject(body);
+
+        //                HttpResponseMessage responsee;
+        //                try
+        //                {
+        //                    responsee = await client.PostAsync(apiUrl, new StringContent(json, Encoding.UTF8, "application/json"));
+        //                }
+        //                catch (HttpRequestException)
+        //                {
+        //                    throw new Exception("❌ Banco de dados não encontrado ou inacessível.");
+        //                }
+
+        //                string result = await responsee.Content.ReadAsStringAsync();
+
+        //                if (!responsee.IsSuccessStatusCode)
+        //                {
+        //                    string erroLower = result.ToLower();
+        //                    if (erroLower.Contains("database not found") ||
+        //                        erroLower.Contains("no such database") ||
+        //                        erroLower.Contains("not exist") ||
+        //                        erroLower.Contains("unknown database") ||
+        //                        erroLower.Contains("invalid database"))
+        //                        throw new Exception("❌ Banco de dados não encontrado.");
+        //                    else
+        //                        throw new Exception($"❌ Erro ao consultar a nuvem. Status HTTP: {responsee.StatusCode}. Resposta: {result}");
+        //                }
+
+        //                var data = JObject.Parse(result);
+        //                if (data["data"] is not JArray arr || arr.Count == 0)
+        //                    throw new Exception("❌ Usuário ou senha incorretos.");
+
+        //                string nomeUsuario = arr[0]?[0]?.ToString();
+        //                string ativoStr = arr[0]?[1]?.ToString();
+
+        //                if (ativoStr != "1")
+        //                    throw new Exception("🚫 Usuário bloqueado.");
+
+        //                // 🔹 Login concluído
+        //                Logado = true;
+        //                SessaoNuvem.BancoAtual = nomeBanco;
+        //                SessaoNuvem.DocumentoUsuario = documento;
+
+        //                return $"✅ Login realizado com sucesso. Usuário: {nomeUsuario} | Empresa: {nomeEmpresa}";
+        //            }
+        //        }
+        //    }
+
+
+        // 🔹 Executa SQL dentro do banco da empresa logada
+
+
+
+
+
         public async Task<string> FazerLoginAsync(string nomeBanco, string documento, string senha)
         {
             if (string.IsNullOrWhiteSpace(nomeBanco))
                 throw new Exception("❌ O nome do banco não foi informado.");
 
-            // Busca Nome + ApiKey da empresa no banco central (SGA)
+            // 1️⃣ Busca Nome + ApiKey da empresa no SGA
             var (nomeEmpresa, apiKeyEmpresa, bloqueado) = await ObterDadosEmpresaAsync(nomeBanco);
 
             if (bloqueado)
@@ -402,200 +615,76 @@ namespace APP_SITE_ACADEMIA.Classes
             ApiKeyEmpresa = apiKeyEmpresa;
             BancoEmpresa = nomeBanco;
 
-            using (var client = CriarHttpClient(ApiKeyEmpresa))
+            // 2️⃣ SELECT no banco da empresa
+            string sql = $@"
+        SELECT Nome, Ativo
+        FROM Usuarios
+        WHERE Documento = '{documento}'
+        AND Senha = '{senha}'
+        LIMIT 1;
+    ";
+
+            using (var client = new HttpClient())
             {
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", ApiKeyEmpresa);
 
-
-
-
-
-
-                string sqlSGA = $@"
-    SELECT Nome, Ativo
-    FROM Usuarios
-    WHERE Documento = '{documento}'
-    AND Senha = '{senha}'
-    ;";
-
-                using (var clientSGA = new HttpClient())
+                var body = new
                 {
-                    clientSGA.DefaultRequestHeaders.Authorization =
-                        new AuthenticationHeaderValue("Bearer", apiKeySGA);
-
-                    //var bodySGA = new
-                    //{
-                    //    data = new
-                    //    {
-                    //        database = bancoSGA,
-                    //        sql = sqlSGA
-                    //    }
-                    //};
-
-
-                    var bodySGA = new
-                    {
-                        database = bancoSGA,
-                        sql = sqlSGA
-                    };
-
-                    var jsonSGA = JsonConvert.SerializeObject(bodySGA);
-                    var contentSGA = new StringContent(jsonSGA, Encoding.UTF8, "application/json");
-
-                    var responseSGA = await clientSGA.PostAsync(apiUrl, contentSGA);
-                    var respostaSGA = await responseSGA.Content.ReadAsStringAsync();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    string sql = $@"
-    SELECT Nome, Ativo
-    FROM Usuarios
-    WHERE Documento = '{documento}'
-    AND Senha = '{senha}'
-    ;";
-
-                    //var body = new
-                    //{
-                    //    data = new
-                    //    {
-                    //        database = nomeBanco,
-                    //        sql = sql
-                    //    }
-                    //};
-
-
-                    var body = new
-                    {
-                        database = nomeBanco,
-                        sql = sql
-                    };
-                    //            var contentSGA = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-
-
-                    string json = JsonConvert.SerializeObject(body);
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                    var response = await client.PostAsync(apiUrl, content);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    //          string sql = $@"
-                    //              SELECT Nome, Ativo
-                    //              FROM Usuarios
-                    //              WHERE Documento = '{documento}'
-                    //              AND Senha = '{senha}'
-                    //              LIMIT 1;";
-
-                    ////          var body = new { database = nomeBanco, sql };
-
-
-
-
-
-
-                    //          var body = new
-                    //          {
-                    //              data = new
-                    //              {
-                    //                  database = nomeBanco,
-                    //                  sql = sql
-                    //              }
-                    //          };
-
-
-
-
-
-
-
-
-
-
-                    //       string json = JsonConvert.SerializeObject(body);
-
-                    HttpResponseMessage responsee;
-                    try
-                    {
-                        responsee = await client.PostAsync(apiUrl, new StringContent(json, Encoding.UTF8, "application/json"));
-                    }
-                    catch (HttpRequestException)
-                    {
-                        throw new Exception("❌ Banco de dados não encontrado ou inacessível.");
-                    }
-
-                    string result = await responsee.Content.ReadAsStringAsync();
-
-                    if (!responsee.IsSuccessStatusCode)
-                    {
-                        string erroLower = result.ToLower();
-                        if (erroLower.Contains("database not found") ||
-                            erroLower.Contains("no such database") ||
-                            erroLower.Contains("not exist") ||
-                            erroLower.Contains("unknown database") ||
-                            erroLower.Contains("invalid database"))
-                            throw new Exception("❌ Banco de dados não encontrado.");
-                        else
-                            throw new Exception($"❌ Erro ao consultar a nuvem. Status HTTP: {responsee.StatusCode}. Resposta: {result}");
-                    }
-
-                    var data = JObject.Parse(result);
-                    if (data["data"] is not JArray arr || arr.Count == 0)
-                        throw new Exception("❌ Usuário ou senha incorretos.");
-
-                    string nomeUsuario = arr[0]?[0]?.ToString();
-                    string ativoStr = arr[0]?[1]?.ToString();
-
-                    if (ativoStr != "1")
-                        throw new Exception("🚫 Usuário bloqueado.");
-
-                    // 🔹 Login concluído
-                    Logado = true;
-                    SessaoNuvem.BancoAtual = nomeBanco;
-                    SessaoNuvem.DocumentoUsuario = documento;
-
-                    return $"✅ Login realizado com sucesso. Usuário: {nomeUsuario} | Empresa: {nomeEmpresa}";
+                    database = nomeBanco,
+                    sql = sql
+                };
+
+                string json = JsonConvert.SerializeObject(body);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                HttpResponseMessage response = await client.PostAsync("https://coloa4kivz.g1.sqlite.cloud/v2/weblite/sql", content);
+                string result = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    string erroLower = result.ToLower();
+                    if (erroLower.Contains("unauthorized"))
+                        throw new Exception("❌ APIKEY inválida ou não autorizada.");
+                    else
+                        throw new Exception($"❌ Erro ao consultar a nuvem. Status HTTP: {response.StatusCode}. Resposta: {result}");
                 }
+
+
+
+
+
+                var data = JObject.Parse(result);
+                var rows = data["data"] as JArray;
+
+                if (rows == null || rows.Count == 0)
+                    throw new Exception("❌ Usuário ou senha incorretos.");
+
+                var row = (JObject)rows[0];
+                //         string nomeUsuario = rows[0][0]?.ToString();
+                //bool ativo = rows[0][1]?.ToObject<int>() == 1;
+
+                string nomeUsuario = row["Nome"]?.ToString();
+                int ativo = row["Ativo"]?.ToObject<int>() ?? 0;
+
+                if (ativo != 1)
+                    throw new Exception("🚫 Usuário bloqueado.");
+
+                // Sessão
+                Logado = true;
+                SessaoNuvem.BancoAtual = nomeBanco;
+                SessaoNuvem.DocumentoUsuario = documento;
+
+                return $"✅ Login realizado com sucesso. Usuário: {nomeUsuario} | Empresa: {nomeEmpresa}";
             }
         }
-        
 
-        // 🔹 Executa SQL dentro do banco da empresa logada
+
+
+
+
+
+
         public async Task<string> ExecutarSqlEmpresaAsync(string sql)
         {
             string banco = SessaoNuvem.BancoAtual;
@@ -608,7 +697,7 @@ namespace APP_SITE_ACADEMIA.Classes
                 var body = new { database = banco, sql };
                 string json = JsonConvert.SerializeObject(body);
 
-                var response = await client.PostAsync(apiUrl, new StringContent(json, Encoding.UTF8, "application/json"));
+                var response = await client.PostAsync(apiUrlSGA, new StringContent(json, Encoding.UTF8, "application/json"));
                 string result = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
